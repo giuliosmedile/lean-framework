@@ -1,0 +1,144 @@
+---
+name: lean-build
+description: 'Turn a story, feature, bug fix, or meaningful change into working code — planned, implemented by a fresh subagent, reviewed by independent reviewers, and verified. Use when the user delegates implementation work, names a story id, or says "build", "implement", or "next story". Supports --auto for unattended runs. Skip trivial mechanical edits (typos, formatting, ignore files).'
+---
+
+# Lean Build
+
+Intent → small frozen spec → implementation → independent review → route problems back to where they came from. The spec is the single source of truth: the implementer works only from it, and the reviewers judge the code against it.
+
+Speak the user's language. Never push to a remote. Never edit anything inside `<frozen-after-approval>` unless the human renegotiates.
+
+**On start:** follow `{skill-root}/../lean-kit/SKILL.md` → *Every lean skill, on start*, and use its **Layout** for every path. You are the orchestrator.
+
+**One file per story.** A planned story's `.md` file (written by `lean-plan`) *is* its build spec: you grow that same file into the full spec. Its frontmatter `status` is the story's only status: never write status into `stories.yaml`. The only time build touches `stories.yaml` is to add a story split off from this one.
+
+| You (top tier) | Workers |
+|---|---|
+| route, spec, frozen intent, checkpoint | `scout`: code investigation |
+| judge the diff against the spec | `implement`: writes the code from the spec |
+| triage every review finding | `review`: the three lenses |
+| everything said to the user (kiss shape) | |
+
+**KISS is the default build posture:** the spec's Approach is the simplest one that passes acceptance (`kiss.md` §A), prefer the small route whenever it honestly applies, and treat over-engineering found in review as a defect.
+
+Shared files from the sibling `lean-review` skill (install them together):
+- `{skill-root}/../lean-review/triage.md`
+- `{skill-root}/../lean-review/lenses/adversarial.md`, `edge-case-hunter.md`, `verification-gap.md`
+
+**`--auto` mode** (unattended loop): never wait for a human. Wherever this file says HALT, instead write the question into the story file, set its `status: blocked` with `blocked_reason`, report it, and stop. With no story given, take the next story (below) whose `depends_on` are all `done`.
+
+## 1. Resolve
+
+Work out what you're building, in this order:
+
+1. **A story or spec file** → resume by its `status`: `todo` → step 2 (it's a stub from lean-plan); `draft` → step 2; `ready`/`in-progress` → step 3; `in-review` → step 4; `blocked` → show `blocked_reason` and ask; `done` → read it as context for new work.
+2. **A story id** (`E2-3`) → the epic is the id's prefix. Look the id up in `plan/epics/<E>-*/stories.yaml` and open its `file`, then resume as above.
+3. **"Next story"** → in `plan/epics.yaml`, take the `active` epics in order. In each one, walk `stories.yaml` top to bottom and pick the first story whose file says `todo` and whose `depends_on` are all `done`. For a lane, use that lane's stories only. Read frontmatters only, not whole files.
+4. **Freeform intent** → spec file is `plan/adhoc/<slug>.md`. Don't ask the user to restate a request they already made.
+5. **Nothing** → list in-flight story files in active epics and `plan/adhoc/` (status not `todo`/`done`), and the next story; ask which.
+
+Treat the intent — however detailed — as input to investigate, not permission to skip planning.
+
+**Sanity gates** (interactive only):
+- Dirty working tree or a branch that obviously doesn't match the work → HALT and ask.
+- More than one independently shippable goal in the request → list them, recommend which to do first, and ask: split (append the rest to the epic's `deferred.md`, or `plan/deferred.md` for ad-hoc work) or keep together.
+
+## 2. Plan
+
+**Context.** For a story, read:
+- the story file;
+- its epic's `EPIC.md` (goal, epic decisions);
+- the SPEC capabilities in `caps`, and the ADs in `rules` (project ARCHITECTURE or EPIC.md);
+- the relevant UX.md sections;
+- the `Implementation Notes` / `Code Map` of the most recent `done` story in the same epic.
+
+Don't load whole planning docs into the implementer's context; cite the files that apply in the spec's `context:` list. That can include a specific document from `docs/` (an API spec, a data dictionary) when the story depends on it. For ad-hoc work, skim `plan/` for anything relevant.
+
+**Lane stories** (the epic's `stories.yaml` has `lanes:`). Also read the epic's CONTRACTS.md: the seams this story implements (`seams:`) and consumes, their value rules, and the fixtures. Add to the spec's Boundaries → **Always**:
+- touch only this lane's modules (per CONTRACTS.md) plus its tests;
+- **never** edit the contracts package, the shared fakes, or the fixtures. If the story can't be done without changing them, HALT with a contract-change request (what, why, which seams). In `--auto`: `blocked` with that request. The fix goes through `lean-change course` → an `<E>-C<n>` story;
+- build against the other lanes' fakes; the contract tests of the seams in `seams:` must pass against the real implementation;
+- the walking-skeleton test stays green after swapping in this story's real implementation.
+
+Special stories:
+- **`<E>-0`** implements the epic's CONTRACTS.md (types, fakes, fixtures + their schema check, contract tests, boundary test, skeleton). It's always full route with a spec checkpoint. Its "real implementations" are the fakes.
+- **Checkpoint / integration stories** run the fixture through the real producer and real consumer. When they fail, the contract tests decide whose side is wrong. Fix that side if it's within this story's reach. Otherwise defer it to that lane's next story, with the failing test named. If the contract itself is ambiguous, raise a contract change.
+
+**Investigate the code** — launch `scout` workers (in parallel when the questions are independent), each with one precise question, returning ≤ 15 bullets of `path:line — what's there — reuse / don't touch`. Open the cited spots yourself before you rely on them. Look specifically for **existing code to reuse** — KISS starts there. Don't ask the human anything a search, the planning docs, or git history can answer.
+
+**Decide the route** by writing down three facts:
+- **Intent gaps** — things the user would notice in the result that neither the request nor the code settles. (Choices the user wouldn't notice are yours — decide and record them.)
+- **Irreversibles** — migrations, data deletion/mutation, external side effects, deploy/config triggers.
+- **Footprint** — files changed; new things other code will depend on.
+
+**Growing the story file.** Keep its frontmatter (`id`, `epic`, `lane`, `caps`, `rules`, `seams`, `checkpoint`) and add the build fields from `assets/story-spec-template.md`. Its `## Acceptance` moves into the Intent's **Acceptance**. Ad-hoc work starts a fresh file from the template.
+
+**Small route** — no gaps, nothing irreversible, small footprint: the spec keeps only frontmatter, Intent (inside the frozen block), and Implementation Notes; `route: small`; skip to step 3 without a checkpoint.
+
+**Full route** — otherwise fill the rest of `assets/story-spec-template.md`:
+- Sharpen the story's acceptance criteria; don't re-derive the story from the spec.
+- Put AD rules the story touches under Always; put the investigation into Code Map so the implementer needn't repeat it.
+- Every intent gap becomes an Open Questions entry with options and consequences. Never bury a gap in the frozen block as an assumption.
+- Self-check: every task has a path and action, tasks are in dependency order, acceptance is Given/When/Then, nothing is TBD. Fix what the repo can tell you; anything else is an open question.
+- **KISS pass on your own spec:** Approach is the simplest that passes acceptance; tasks touch the fewest files; any new dependency, abstraction, or config option carries a one-line reason, otherwise delete it.
+- Over the build-spec cap in `kiss.md` §B → propose a split, or keep the spec with the user's OK. A split of a planned story adds the new story to the epic's `stories.yaml` with the next free id and a stub file. A split of ad-hoc work sends the deferred goals to `deferred.md`.
+
+**Checkpoint — only when needed.** Ask the human when any of these are true: Open Questions exist, something is irreversible, the story says `checkpoint: spec`, or the work is ad-hoc and full-route. Present every open question at once, numbered, with options; write each answer into the frozen block as a decision. Then show the spec path and offer: approve and continue / approve and stop here / let me review it first.
+
+If none apply, the intent was already approved during planning: set `status: ready` and continue.
+
+## 3. Implement
+
+1. Record `baseline_commit` (current HEAD, or `NO_VCS`) in frontmatter unless already set. Set `status: in-progress`.
+2. **Full route:** launch a fresh-context `implement` worker with exactly this prompt (paths filled in) and nothing else — the spec is the whole brief:
+
+   > Read {spec_file} fully and implement it — the spec is the sole source of truth. Load every file listed in its frontmatter `context:` before you start. Follow the engineering rules in {kiss_file} §A: the simplest code that passes the acceptance criteria, nothing speculative. Add decisions and surprises to its Implementation Notes. Do not invoke skills or spawn subagents. When done, report in ≤ 10 lines: what you changed, how you verified it, and anything left incomplete or risky.
+
+   `{kiss_file}` = absolute path of `lean-kit/kiss.md`. Keep the worker addressable for review fixes. Without subagents, implement it yourself from the spec.
+
+   If the worker reports it couldn't finish, or step 3 finds the work substantially incomplete, re-run it once at the next tier up (`orchestration.md` §4) from the same spec.
+
+   **Small route:** implement directly. If you discover an intent gap, an irreversible step, or growing scope, stop, record why in Implementation Notes, switch to `route: full`, and return to step 2.
+3. **Judge the diff, not the report.** Write the unified diff since `baseline_commit` (untracked files included) to a uniquely named file in the system temp dir and read it. Check every task and acceptance criterion; tick tasks `[x]`; finish anything missing.
+4. **Matrix audit.** If an Edge-Case Matrix exists, every row needs a test that ran and passed. A test that didn't run (skipped, filtered, unregistered) counts as missing. If a test disagrees with the matrix, fix the code — never the expectation; if the row itself is ambiguous, HALT.
+5. Run the Verification commands. Lane stories also run the boundary test, the contract tests of their seams, and the walking skeleton.
+6. **Lane stories — judge the diff for trespass:** any change outside the lane's modules, or to the contracts, fakes, or fixtures, is reverted before review. It isn't negotiable inside a build.
+
+## 4. Review
+
+Set spec `status: in-review`. Rewrite the diff file to the current tree.
+
+Launch all reviewers **at once**, as context-free `review` workers at that role's tier, and wait for all of them in this turn:
+
+| Reviewer | Prompt | Full route | Small route |
+|---|---|---|---|
+| adversarial | lens `adversarial.md` + diff path | ✓ | ✓ |
+| edge-case | lens `edge-case-hunter.md` + diff path + spec path as claims file (read last) | ✓ | |
+| verification-gap | lens `verification-gap.md` + diff path | ✓ | ✓ (if behavior changed) |
+
+Each prompt gives absolute paths (never pasted diff text) and ends: *"Do not invoke skills or spawn subagents — you are the reviewer. Return your findings as text in your final message."* Without subagents: write each prompt with its files inlined into `plan/adhoc/review-prompts/`, HALT, and ask the user to run them in separate sessions and paste back the findings.
+
+**Triage** every finding per `triage.md` **yourself** (never on a worker; reviewer tiers are cheap precisely because you verify) and log each in the spec's Review Triage Log. Then act on the routes, highest first:
+
+- **intent_gap** (full route) → revert the code changes, HALT to resolve with the human, update the frozen block, back to step 2.
+- **bad_spec** (full route) → write KEEP notes (what worked and must survive), revert the code changes, amend the non-frozen spec sections respecting every earlier Spec Change Log entry, append a change-log entry, back to step 3.
+- On the small route, an intent_gap or bad_spec → HALT and ask (the small route has no spec to loop through).
+- Before any loopback, increment `review_loops`; past **3**, HALT and escalate to the human. On the second bad_spec loopback for this spec, re-run the `implement` worker one tier up.
+- **patch** (only once no loopback is pending) → send the implementation subagent one message — *"Review found problems. Fix each with the smallest change that does the job; run only the tests covering files you edit. Reply with what you changed."* plus one line per fix (`file — what's wrong — what the fix must do`). Apply them yourself if it's gone. Re-run Verification; if it fails and can't be fixed, HALT.
+- **defer** → append to the epic's `deferred.md` (or `plan/deferred.md` for ad-hoc work) per `triage.md`.
+
+## 5. Finish
+
+1. Add the `workers:` line to Implementation Notes (`orchestration.md` §6). Set `status: done`. If this was the epic's last open story, say so in `Next:` and recommend `lean-plan status` (it closes the epic) and `lean-change retro`.
+2. If git is available and the tree is dirty, commit locally with a conventional message from the spec title. Lane stories: remind the user (in `Next:`) to merge into the integration branch per the plan's cadence, and name any seam checkpoint this story just unblocked.
+3. Report in the kiss shape, nothing more:
+
+   ```
+   **lean-build · done** — {story id}: {what changed, one line}
+   | review | {N findings → x patched, y deferred, z rejected} |
+   | verify | {pass / what ran} |
+   | commit | {hash} |
+   | workers | {scout=… implement=… review=…×3, escalations=n} |
+   Next: {next story id/title} · PR · other change
+   ```

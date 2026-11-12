@@ -1,0 +1,14 @@
+# plan/epics/<E>-<slug>/stories.yaml — this epic's stories, in build order (top to bottom; per lane when multi-lane).
+# Order and structure only. NO status here: status lives in each story file's frontmatter.
+# Ids are global: <epic>-<n>. <epic>-0 is the contracts story when the epic has 2+ lanes.
+
+epic: E1
+lanes: []                       # only when the epic runs 2+ lanes — details in CONTRACTS.md
+#  - { id: A, owner: '', modules: [] }
+
+stories:
+  - id: E1-1
+    title: Scaffold project from the chosen starter
+    file: stories/E1-1-scaffold.md
+    lane: ''                    # '' (single lane) | shared | <lane id> | integration
+    depends_on: []              # story ids above this one, or in an earlier epic

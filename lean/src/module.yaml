@@ -1,0 +1,62 @@
+# LEAN install questions — same shape as BMAD's module.yaml.
+#   section/key : where the answer lands in _lean/config*.toml
+#   scope       : team → _lean/config.toml (committed) · user → _lean/config.user.toml (personal, gitignored)
+#   result      : template applied to the answer ({value}, {project-root})
+#   default     : {directory_name} and {system_user} are filled in by the installer
+
+code: lean
+name: "LEAN Method"
+header: "LEAN configuration"
+subheader: "Shared by every lean-* skill. Re-run the installer to change answers; prior answers become defaults."
+
+questions:
+  - key: user_name
+    section: core
+    scope: user
+    prompt: "What should the skills call you?"
+    default: "{system_user}"
+
+  - key: project_name
+    section: core
+    scope: team
+    prompt: "What is your project called?"
+    default: "{directory_name}"
+
+  - key: communication_language
+    section: core
+    scope: user
+    prompt: "Language for talking with you?"
+    default: "English"
+
+  - key: document_output_language
+    section: core
+    scope: team
+    prompt: "Language for documents (specs, stories)?"
+    default: "English"
+
+  - key: input_folder
+    section: core
+    scope: team
+    prompt: "Folder with your source documents — briefs, specs, notes, research (LEAN reads it, never writes it)?"
+    default: "docs"
+    result: "{project-root}/{value}"
+
+  - key: output_folder
+    section: core
+    scope: team
+    prompt: "Folder for plans and specs (relative to the project root)?"
+    default: "plan"
+    result: "{project-root}/{value}"
+
+  - key: style
+    section: lean
+    scope: team
+    prompt: "Default working style?"
+    options:
+      - { value: kiss, label: "kiss — simplest code, short docs, ≤12-line replies (recommended)" }
+      - { value: standard, label: "standard — same engineering rules, relaxed length caps" }
+    default: "kiss"
+
+directories:
+  - "{input_folder}"
+  - "{output_folder}"

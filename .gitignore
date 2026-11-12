@@ -1,0 +1,17 @@
+# Python / explainer generated output
+explainer/.venv/
+__pycache__/
+explainer/media/
+explainer/frames/
+explainer/mframes/
+explainer/voices/
+explainer/narration/*.wav
+*.mp4
+
+# Node
+node_modules/
+*.tgz
+
+# LEAN personal config
+_lean/config.user.toml
+_lean/custom/config.user.toml

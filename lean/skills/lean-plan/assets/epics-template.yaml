@@ -1,0 +1,17 @@
+# plan/epics.yaml — the epic index. Thin on purpose: details live in each epic's EPIC.md.
+# Epic status: planned | active | done. Story status lives only in story files.
+# Ids are global, never renumbered or reused.
+
+spec: SPEC.md
+architecture: ARCHITECTURE.md   # omit if none
+uncovered: []                   # CAP/QR ids intentionally covered by no epic, each with a reason
+
+epics:
+  - id: E1
+    title: Foundation
+    folder: epics/E1-foundation
+    goal: >-
+      One line: what the user can do when this epic is done.
+    caps: [CAP-1]                # CAP/QR ids this epic delivers
+    depends_on: []               # epic ids that must be done (or whose stories are needed) first
+    status: active
