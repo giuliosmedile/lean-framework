@@ -53,7 +53,7 @@ Lanes follow **module ownership**, never story-by-story assignment. Use the modu
 - **Every lane has a first story that needs nothing but `<E>-0`**, so nobody waits. If a lane can't start until another delivers, give it a story against the other lane's fake.
 - **Balance the critical path.** If one lane carries most of the work, move a module or split the biggest story. Name the bottleneck in EPIC.md.
 
-Present the lanes as one table (lane · owner · modules · first story · nature of work) for approval. Then write them into `stories.yaml` → `lanes`.
+Present the lanes as one table (lane · owner · modules · first story · nature of work) for approval. Then write them into `stories.yaml` → `lanes`, with each lane's `modules` as path prefixes from the repo root (e.g. `src/search/`), so `lean-method check --story` can catch trespass mechanically.
 
 ### 4. Contracts (2+ lanes)
 
@@ -99,6 +99,8 @@ Then set the epic `active` in both `epics.yaml` and EPIC.md.
 
 Ask one question: **could each developer build these stories without inventing decisions nothing records, and will the pieces fit together?**
 
+Run `lean-method check --epic <E>` first (CLI per `lean-kit/SKILL.md` → *CLI*). It decides every mechanical item below (tree consistency, ids, dependencies, CAP coverage, lanes, seam owners, decisions due); fix its `✖` errors before judging the rest. Spend your own reading only on what a script can't judge: whether decisions are recorded, whether documents conflict, whether stories are buildable. Without the CLI, check them by reading:
+
 - **Tree consistency:**
   - every `epics.yaml` entry has its folder and EPIC.md;
   - every `stories.yaml` entry has its file, and every file is listed;
@@ -122,7 +124,7 @@ For launch-stakes projects, epics with more than ~15 stories, or any multi-lane 
 
 ## Status
 
-Read `epics.yaml`, then only the **active** epics: `stories.yaml`, the frontmatter of each story file, CONTRACTS.md, and `deferred.md`. Don't open `done` epics. No workers. Report:
+Run `lean-method next` and `lean-method check`; their output covers in-flight, blocked and next stories, overdue decisions, and epics ready to close. Read further only for what they don't say: CONTRACTS.md for due seam checkpoints and pending contract changes, and `deferred.md`. Without the CLI, read `epics.yaml`, then only the **active** epics: `stories.yaml`, the frontmatter of each story file, CONTRACTS.md, and `deferred.md`. Don't open `done` epics. No workers. Report:
 
 - One table of epics: id · title · status · done/total stories.
 - For each active epic, one table: lane · todo · in-progress · blocked · done · next story.

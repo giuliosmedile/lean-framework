@@ -4,7 +4,7 @@
 
 epic: E1
 lanes: []                       # only when the epic runs 2+ lanes — details in CONTRACTS.md
-#  - { id: A, owner: '', modules: [] }
+#  - { id: A, owner: '', modules: [src/search/] }   # path prefixes from the repo root — `lean-method check --story` flags edits outside them
 
 stories:
   - id: E1-1

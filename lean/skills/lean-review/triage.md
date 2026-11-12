@@ -18,7 +18,7 @@ Give exactly one verdict:
 - `false` — you checked and it doesn't happen. Write what disproves it.
 - `maybe-false` — the code and diff genuinely can't settle it. Write what would.
 
-Record **every** finding as one row in the triage log (verdict + one or two sentences of evidence). Never drop or silently merge one.
+Record **every** finding as one row in the triage log, never dropping or silently merging one. In a build spec the log is a table `| # | lens | verdict | route | evidence |` (see `lean-build/assets/story-spec-template.md`): `lens` is the reviewer's lens name, `verdict` one of the five above, `route` one of `patch | bad_spec | intent_gap | defer | reject` (rejected findings take `reject`), evidence one or two sentences. `lean-method metrics` counts these rows, so use exactly these words.
 
 Then reject:
 - `false` findings.

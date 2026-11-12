@@ -77,7 +77,7 @@ The session model is the **orchestrator**: it writes specs, decides, verifies, a
 - **Role agents.** The installer creates `lean-<role>` agents in `.claude/agents/` and `.opencode/agents/`, each carrying its model. The skills spawn them by name.
 - **Escalation.** A worker that fails is re-run once, one tier up.
 - **Never delegated:** triage of findings, frozen intent, IDs, and decisions put to you.
-- **Spend is logged.** Each run records a `workers:` line.
+- **Spend is logged.** Each build fills a `metrics:` block in the story file (models per role, escalations, tokens when the harness reports them, start/finish); `lean-method metrics` adds them up, together with the review findings by verdict, lens and reviewer model.
 - **Changing models:** run `lean-kit`, or edit `_lean/custom/config.user.toml` and then run `npx lean-method install --action quick-update`.
 
 ## 6. KISS
@@ -132,6 +132,18 @@ npx lean-method scout       # read-only: agents, models, suggested tiers
 npx lean-method status      # what's installed, effective role → model, files you've edited
 npx lean-method uninstall   # keeps _lean/custom/ and your plans
 ```
+
+Plan tooling — deterministic, no model involved (the skills call these too):
+
+```bash
+lean-method check [--epic E2]        # lint the plan tree: ids, status, deps, CAP coverage, lanes, seams, frozen intent, spec size
+lean-method check --story E2-3       # one story: frozen block intact, size, open deps, lane trespass since baseline_commit
+lean-method next [--lane A]          # in-flight, blocked, and next ready story per epic/lane
+lean-method freeze --story E2-3      # hash the approved frozen block; check fails if it changes
+lean-method metrics [--epic E2] [--json]   # loops, escalations, findings by verdict/lens/model, tokens, time
+```
+
+Install the package as a devDependency (`npm i -D lean-method`) or globally so these run offline; skills fall back to reading when the CLI is missing.
 
 | File | Holds | Who writes it |
 |---|---|---|

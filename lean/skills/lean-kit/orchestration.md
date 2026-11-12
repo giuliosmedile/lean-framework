@@ -62,7 +62,8 @@ Launch independent workers in parallel in one turn and wait for all of them. Tak
 
 ## 6. Log the spend
 
-Record which tier did what, so runs can be compared:
+Record which tier did what, so runs can be compared. The point is a number someone can aggregate, not a sentence.
 
-- `lean-build`: one line in the spec's Implementation Notes — `workers: scout=haiku implement=sonnet review=sonnet×3 escalations=0`.
-- Other skills: one line in the doc's Decision Log — `{date} — event — workers: …`.
+- `lean-build`: the story's frontmatter `metrics:` block (`lean-build/assets/story-spec-template.md`): the model each role actually ran on after escalations, the escalation count, `started`/`finished`, and tokens. `lean-method metrics` aggregates it, together with the Review Triage Log rows (verdict and false-positive rate per lens and per reviewer model).
+- **Tokens: report, never estimate.** When the harness returns usage for a subagent (Claude Code's Agent tool result does), add it to `worker_tokens`. Fill `orchestrator_tokens` only if the harness shows the session's own usage. Otherwise leave `null`: a guessed number poisons the comparison.
+- Other skills: one line in the doc's Decision Log — `{date} — event — workers: scout=haiku×2 check=sonnet escalations=0 tokens=…`.

@@ -65,6 +65,22 @@ Rules:
 - **Read only what's needed.** "What next" reads `epics.yaml` plus the active epic(s). A build reads one story file, its `EPIC.md` (and `CONTRACTS.md`), and the CAP/AD ids it cites. Finished epics are left alone.
 - **Always this tree,** even for a single epic: one layout, one code path.
 
+## CLI — mechanics are scripts, not tokens
+
+Anything a script can decide, the script decides. Skills run these instead of working it out by reading:
+
+| Command | Replaces |
+|---|---|
+| `lean-method check [--epic E2]` | tree consistency, id/status/lane validity, dependency order and cycles, CAP coverage, seam owners, overdue decisions, frozen-intent hashes, build-spec size |
+| `lean-method check --story E2-3` | one story before review: its file, frozen block, size, open dependencies, and lane **trespass** since `baseline_commit` |
+| `lean-method next [--lane A]` | "what's next": in-flight, blocked, and the next ready story per epic and lane |
+| `lean-method freeze --story E2-3` (or `--file`) | records the hash of the `<frozen-after-approval>` block; `check` fails if it changes later |
+| `lean-method metrics [--epic E2] [--json]` | counting review findings, loops, escalations, tokens, and time across stories |
+
+**How to call it:** `lean-method …` if it's on the PATH (global install), else `npx --no-install lean-method …` (project devDependency). Add `--directory {project-root}` when not running from the root. If neither runs, do the same check by reading, as the skill describes, and say once that the CLI is missing.
+
+**Reading the result:** `✖` errors must be fixed (or put to the user) before the step that needed the check; `▲` warnings are reported, not blocking. Never edit a file just to silence a finding you haven't understood. Use `--json` when you need to act on the findings one by one.
+
 ## Every lean skill, on start
 
 1. Read `{skill-root}/../lean-kit/kiss.md` and `{skill-root}/../lean-kit/orchestration.md`.

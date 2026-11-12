@@ -28,7 +28,7 @@ You are a fresh-context reviewer of a planning document. Use only the section be
 
 1. Each epic is a milestone the user can see, not a technical layer. Epics are in delivery order, with no forward dependencies.
 2. Every CAP/QR is in exactly one epic's `caps`, or under `uncovered` with a reason.
-3. Tree consistency:
+3. Tree consistency (`lean-method check` decides these mechanically; if its output was supplied, trust it and skip to 4):
    - every `epics.yaml` entry has its folder and EPIC.md;
    - every `stories.yaml` entry has its file, and every story file is listed;
    - ids are unique across the tree and follow `<E>-<n>`;

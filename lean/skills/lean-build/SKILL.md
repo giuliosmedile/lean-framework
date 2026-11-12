@@ -34,7 +34,7 @@ Work out what you're building, in this order:
 
 1. **A story or spec file** → resume by its `status`: `todo` → step 2 (it's a stub from lean-plan); `draft` → step 2; `ready`/`in-progress` → step 3; `in-review` → step 4; `blocked` → show `blocked_reason` and ask; `done` → read it as context for new work.
 2. **A story id** (`E2-3`) → the epic is the id's prefix. Look the id up in `plan/epics/<E>-*/stories.yaml` and open its `file`, then resume as above.
-3. **"Next story"** → in `plan/epics.yaml`, take the `active` epics in order. In each one, walk `stories.yaml` top to bottom and pick the first story whose file says `todo` and whose `depends_on` are all `done`. For a lane, use that lane's stories only. Read frontmatters only, not whole files.
+3. **"Next story"** → run `lean-method next` (add `--lane <id>` for a lane; CLI per `lean-kit/SKILL.md` → *CLI*) and take the first `next` line. Without the CLI: in `plan/epics.yaml`, take the `active` epics in order; in each one, walk `stories.yaml` top to bottom and pick the first story whose file says `todo` and whose `depends_on` are all `done` (in a multi-lane epic, nothing but `<E>-0` until it's done). For a lane, use that lane's stories only. Read frontmatters only, not whole files.
 4. **Freeform intent** → spec file is `plan/adhoc/<slug>.md`. Don't ask the user to restate a request they already made.
 5. **Nothing** → list in-flight story files in active epics and `plan/adhoc/` (status not `todo`/`done`), and the next story; ask which.
 
@@ -82,15 +82,17 @@ Special stories:
 - Every intent gap becomes an Open Questions entry with options and consequences. Never bury a gap in the frozen block as an assumption.
 - Self-check: every task has a path and action, tasks are in dependency order, acceptance is Given/When/Then, nothing is TBD. Fix what the repo can tell you; anything else is an open question.
 - **KISS pass on your own spec:** Approach is the simplest that passes acceptance; tasks touch the fewest files; any new dependency, abstraction, or config option carries a one-line reason, otherwise delete it.
-- Over the build-spec cap in `kiss.md` §B → propose a split, or keep the spec with the user's OK. A split of a planned story adds the new story to the epic's `stories.yaml` with the next free id and a stub file. A split of ad-hoc work sends the deferred goals to `deferred.md`.
+- Over the build-spec cap in `kiss.md` §B (`lean-method check --story <id>` measures it — a `story/size` warning) → propose a split, or keep the spec with the user's OK. A split of a planned story adds the new story to the epic's `stories.yaml` with the next free id and a stub file. A split of ad-hoc work sends the deferred goals to `deferred.md`.
 
 **Checkpoint — only when needed.** Ask the human when any of these are true: Open Questions exist, something is irreversible, the story says `checkpoint: spec`, or the work is ad-hoc and full-route. Present every open question at once, numbered, with options; write each answer into the frozen block as a decision. Then show the spec path and offer: approve and continue / approve and stop here / let me review it first.
 
 If none apply, the intent was already approved during planning: set `status: ready` and continue.
 
+**Freeze.** Whenever the frozen block is approved (at the checkpoint, at `status: ready` without one, and again after an intent_gap is renegotiated), run `lean-method freeze --story <id>` (ad-hoc: `--file <spec>`). From then on `check` fails if anyone, the implementer included, edits frozen intent.
+
 ## 3. Implement
 
-1. Record `baseline_commit` (current HEAD, or `NO_VCS`) in frontmatter unless already set. Set `status: in-progress`.
+1. Record `baseline_commit` (current HEAD, or `NO_VCS`) in frontmatter unless already set. Set `status: in-progress` and `metrics.started` (ISO time) unless already set.
 2. **Full route:** launch a fresh-context `implement` worker with exactly this prompt (paths filled in) and nothing else — the spec is the whole brief:
 
    > Read {spec_file} fully and implement it — the spec is the sole source of truth. Load every file listed in its frontmatter `context:` before you start. Follow the engineering rules in {kiss_file} §A: the simplest code that passes the acceptance criteria, nothing speculative. Add decisions and surprises to its Implementation Notes. Do not invoke skills or spawn subagents. When done, report in ≤ 10 lines: what you changed, how you verified it, and anything left incomplete or risky.
@@ -103,7 +105,7 @@ If none apply, the intent was already approved during planning: set `status: rea
 3. **Judge the diff, not the report.** Write the unified diff since `baseline_commit` (untracked files included) to a uniquely named file in the system temp dir and read it. Check every task and acceptance criterion; tick tasks `[x]`; finish anything missing.
 4. **Matrix audit.** If an Edge-Case Matrix exists, every row needs a test that ran and passed. A test that didn't run (skipped, filtered, unregistered) counts as missing. If a test disagrees with the matrix, fix the code — never the expectation; if the row itself is ambiguous, HALT.
 5. Run the Verification commands. Lane stories also run the boundary test, the contract tests of their seams, and the walking skeleton.
-6. **Lane stories — judge the diff for trespass:** any change outside the lane's modules, or to the contracts, fakes, or fixtures, is reverted before review. It isn't negotiable inside a build.
+6. **Mechanical gate:** run `lean-method check --story <id>`. A `story/frozen-changed` error means frozen intent was edited: restore the block from the approved version (git) — never re-freeze to make it pass. A `diff/trespass` error (lane stories: a change outside the lane's modules, or to the contracts, fakes, or fixtures) is reverted before review; it isn't negotiable inside a build. Also judge the diff yourself for trespass the lane map can't see (e.g. shared test helpers).
 
 ## 4. Review
 
@@ -119,7 +121,7 @@ Launch all reviewers **at once**, as context-free `review` workers at that role'
 
 Each prompt gives absolute paths (never pasted diff text) and ends: *"Do not invoke skills or spawn subagents — you are the reviewer. Return your findings as text in your final message."* Without subagents: write each prompt with its files inlined into `plan/adhoc/review-prompts/`, HALT, and ask the user to run them in separate sessions and paste back the findings.
 
-**Triage** every finding per `triage.md` **yourself** (never on a worker; reviewer tiers are cheap precisely because you verify) and log each in the spec's Review Triage Log. Then act on the routes, highest first:
+**Triage** every finding per `triage.md` **yourself** (never on a worker; reviewer tiers are cheap precisely because you verify) and log each as one row of the spec's Review Triage Log table (exact vocabulary: `triage.md` §1). Then act on the routes, highest first:
 
 - **intent_gap** (full route) → revert the code changes, HALT to resolve with the human, update the frozen block, back to step 2.
 - **bad_spec** (full route) → write KEEP notes (what worked and must survive), revert the code changes, amend the non-frozen spec sections respecting every earlier Spec Change Log entry, append a change-log entry, back to step 3.
@@ -130,7 +132,7 @@ Each prompt gives absolute paths (never pasted diff text) and ends: *"Do not inv
 
 ## 5. Finish
 
-1. Add the `workers:` line to Implementation Notes (`orchestration.md` §6). Set `status: done`. If this was the epic's last open story, say so in `Next:` and recommend `lean-plan status` (it closes the epic) and `lean-change retro`.
+1. Fill the frontmatter `metrics:` block (`orchestration.md` §6): the model each role actually ran on, escalations, token counts the harness reported (else leave `null`), and `finished`. Set `status: done`. If this was the epic's last open story, say so in `Next:` and recommend `lean-plan status` (it closes the epic) and `lean-change retro`.
 2. If git is available and the tree is dirty, commit locally with a conventional message from the spec title. Lane stories: remind the user (in `Next:`) to merge into the integration branch per the plan's cadence, and name any seam checkpoint this story just unblocked.
 3. Report in the kiss shape, nothing more:
 
@@ -139,6 +141,6 @@ Each prompt gives absolute paths (never pasted diff text) and ends: *"Do not inv
    | review | {N findings → x patched, y deferred, z rejected} |
    | verify | {pass / what ran} |
    | commit | {hash} |
-   | workers | {scout=… implement=… review=…×3, escalations=n} |
+   | workers | {scout=… implement=… review=…×3, escalations=n, tokens=… or "not reported"} |
    Next: {next story id/title} · PR · other change
    ```

@@ -42,7 +42,7 @@ Installer commands (terminal, not skills): `npx lean-method install | scout | st
 
 ## Orient
 
-Paths follow the **Layout** in `{skill-root}/../lean-kit/SKILL.md`. Read only this, without workers:
+Paths follow the **Layout** in `{skill-root}/../lean-kit/SKILL.md`. Start with `lean-method next` and `lean-method check` (CLI per `lean-kit/SKILL.md` → *CLI*): they answer most of the table below. Then read only what they don't cover, without workers:
 
 - `_lean/_config/manifest.yaml` — installed? which version and tools. If it's missing, mention `npx lean-method install` once; everything still works without it.
 - `docs/` (the input folder): just the file listing and modification times.

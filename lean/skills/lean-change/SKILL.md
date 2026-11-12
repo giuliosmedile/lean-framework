@@ -40,7 +40,7 @@ Judge the finished work against the evidence it left, not memory. **Every findin
    - deferred items that have become urgent;
    - seams (multi-lane): checkpoint failures and whose side was wrong; contract changes after freeze and what the value rules missed; trespass reverts; time from a lane's first story to its first green checkpoint; overdue decisions. Each is a lesson for the next CONTRACTS.md;
    - complexity creep: code or ADs that violate `kiss.md` §A, and over-engineering findings that kept recurring;
-   - cost: `workers:` lines and escalations — which roles kept escalating (a sign the tier is set too low for that job);
+   - cost and review quality: run `lean-method metrics --epic <E> --json` and read the numbers rather than counting by hand — escalations per role (a role that keeps escalating has its tier set too low), tokens, review loops, and the **false-finding rate per lens and per reviewer model** (a lens that's mostly `false` is costing top-tier triage for nothing; a reviewer model with fewer real findings than another may be missing bugs). Cite the figures in the retro;
    - acceptance: does the shipped epic actually meet the success lines of the capabilities it claimed?
 4. **Verdict:** accept / accept with follow-ups / not accepted (name what's missing).
 5. **Write** the epic's `retro.md`: verdict, findings with sources, and action items. Each action is a concrete edit with an owner: a new story in a later epic (or a new epic), an AD amendment, a convention added, or a deferred item promoted. Mark the epic `done` in `epics.yaml` and EPIC.md if it isn't already. Go over it with the user and apply the actions they approve. If findings show the plan itself is wrong, switch to **course**.

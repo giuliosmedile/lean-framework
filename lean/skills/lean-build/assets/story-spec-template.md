@@ -12,7 +12,15 @@ blocked_reason: ''
 route: ''              # small | full
 baseline_commit: ''    # set before the first code change; never overwritten
 review_loops: 0
+frozen_sha256: ''      # written by `lean-method freeze` when intent is approved; `check` fails if the frozen block changes
 context: []            # project docs the implementer must read (SPEC.md, ARCHITECTURE.md, UX.md …) — only what applies
+metrics:               # filled at finish; aggregated by `lean-method metrics`. null = the harness didn't report it — never estimate
+  models: { orchestrator: '', scout: '', implement: '', review: '' }   # model each role actually ran on (after escalations)
+  escalations: 0
+  worker_tokens: null        # sum of the token counts the harness reported for this story's workers
+  orchestrator_tokens: null  # only if the harness reports the session's own usage
+  started: ''                # ISO time status went in-progress
+  finished: ''               # ISO time status went done
 ---
 
 <!-- Length cap: lean-kit/kiss.md §B (kiss: ≤ 1,000 tokens). Bullets and tables only. Boundaries and examples beat step-by-step "how". Delete every comment and every section that doesn't apply (never write "N/A"). A small-route spec keeps only Intent and Implementation Notes. -->
@@ -69,4 +77,8 @@ context: []            # project docs the implementer must read (SPEC.md, ARCHIT
 
 ## Review Triage Log
 
-<!-- One row per reviewer finding: verdict — evidence — route. -->
+<!-- One row per reviewer finding — never drop or merge rows. `lean-method metrics` counts these rows, so keep the vocabulary exact.
+     lens: adversarial | edge-case | verification-gap · verdict: high | medium | low | false | maybe-false · route: patch | bad_spec | intent_gap | defer | reject -->
+
+| # | lens | verdict | route | evidence |
+|---|---|---|---|---|

@@ -13,6 +13,18 @@ npx lean-method status             # installed version, tools, effective role �
 npx lean-method uninstall          # removes what it installed; keeps _lean/custom/ and your plans
 ```
 
+Plan tooling: deterministic, no model involved. The skills call these instead of spending tokens on bookkeeping:
+
+```bash
+lean-method check [--epic E2]          # lint the plan tree — exit 1 on errors (CI / pre-commit friendly)
+lean-method check --story E2-3         # one story: frozen intent intact, spec size, open deps, lane trespass since baseline_commit
+lean-method next [--lane A]            # in-flight, blocked, and the next ready story per epic and lane
+lean-method freeze --story E2-3        # hash the approved <frozen-after-approval> block
+lean-method metrics [--epic E2] --json # loops, escalations, findings by verdict / lens / reviewer model, tokens, time
+```
+
+For the skills to find these offline, install the package as a devDependency (`npm i -D lean-method`) or globally. Without it the skills fall back to checking by reading.
+
 What `install` does:
 
 1. **Scouts** the machine for coding agents (Claude Code, OpenCode, Codex, Gemini CLI, Cursor). For each one it finds the session model, whether it can give a subagent its own model, and the models it can reach. It then suggests mid/low worker tiers; sibling models guessed from the session id are flagged "verify".
@@ -67,7 +79,7 @@ Every skill is an **orchestrator** on the session model. Bounded jobs go to chea
 - **Tiers** are chosen at install time after scouting, and stored per tool in `_lean/config.user.toml`. They're also baked into the role agents, which the skills spawn by name (`lean-<role>`). Without an install, tiers are detected from the session model. Unknown models and tools without per-subagent model selection fall back to `inherit`.
 - **Escalation:** a worker that fails or returns bad output is re-run once a tier up. The implementer moves up a tier on the second bad-spec loopback.
 - **Guardrails:** triage, frozen intent, ADs, IDs and user decisions are never delegated. Verification-gap findings are trusted without re-checking only when that reviewer ran at top.
-- **Spend is logged:** each run records a `workers:` line, so the experiment can compare cost.
+- **Spend is measured:** each build fills a `metrics:` block in its story file (model per role, escalations, tokens as the harness reports them, start/finish). `lean-method metrics` aggregates it with the Review Triage Log rows, so cost and review quality per tier are numbers, not impressions.
 - Run `lean-kit` ("configure lean") to see or change the resolved tiers.
 
 ## Parallel teams: lanes and contracts
@@ -174,6 +186,8 @@ Every planning doc ends with a `## Decision Log` — append-only, one line per d
 
 ## Risks to watch in the experiment
 
+The reviewer-tier and loopback risks show up in `lean-method metrics --json` (findings and false rate per reviewer model, intent_gap / bad_spec routes, loops); compare epics run with different settings. Drift from bad stories and clean resumes still need judgment in the retro.
+
 - Batch story approval may let drift through → readiness check is the mitigation; measure defects traced to bad stories.
 - Cheaper reviewers may miss real bugs (BMAD insisted reviewers run at session level). Triage filters false positives but can't recover missed findings → compare defects found per story at `review: mid` vs `review: top`.
 - KISS caps may squeeze out a load-bearing detail → watch for intent_gap loopbacks traced to a spec that hit its cap.
@@ -183,7 +197,7 @@ Every planning doc ends with a `## Decision Log` — append-only, one line per d
 ## Development
 
 ```bash
-cd lean && npm install && npm test        # 8 installer tests (fresh install, update + backup, quick-update, uninstall, scout, role agents)
+cd lean && npm install && npm test        # installer tests + plan tooling tests (check, freeze, next, metrics, trespass)
 node tools/installer/lean-cli.js install  # run the installer from the checkout
 ```
 
