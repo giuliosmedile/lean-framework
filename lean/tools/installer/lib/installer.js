@@ -10,6 +10,44 @@ const { renderRoleAgents } = require('./role-agents');
 
 const VERSION = require(path.join(PKG_ROOT, 'package.json')).version;
 const SKILLS_ROOT = path.join(PKG_ROOT, 'skills');
+const INSTALLER_ROOT = path.join(__dirname, '..');
+
+// ── Vendored plan CLI: _lean/bin/lean.js runs check/next/freeze/metrics/claim with no npm install ──
+const CLI_LIBS = ['plan', 'plan-check', 'metrics', 'claims', 'config'];
+const CLI_COMMANDS = ['check', 'next', 'freeze', 'metrics', 'claim'];
+const CLI_DEPS = {
+  yaml: (f) => f === 'package.json' || f === 'LICENSE' || (f.startsWith('dist/') && f.endsWith('.js')),
+  'smol-toml': (f) => f === 'package.json' || f === 'LICENSE' || (f.startsWith('dist/') && /\.(c?js)$/.test(f)),
+  picocolors: (f) => ['package.json', 'LICENSE', 'picocolors.js'].includes(f),
+};
+const GUARD_REL = '_lean/hooks/frozen-guard.js';
+
+/** A dependency's package root: walk up from its resolved entry (some packages don't export package.json). */
+function resolveDep(name) {
+  let dir = path.dirname(require.resolve(name, { paths: [INSTALLER_ROOT, PKG_ROOT] }));
+  while (!fs.existsSync(path.join(dir, 'package.json')) || JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8')).name !== name) {
+    const up = path.dirname(dir);
+    if (up === dir) throw new Error(`can't find the ${name} package root`);
+    dir = up;
+  }
+  return dir;
+}
+
+function cliFiles() {
+  const out = new Map();
+  out.set('_lean/bin/lean.js', fs.readFileSync(path.join(INSTALLER_ROOT, 'plan-cli.js')));
+  for (const l of CLI_LIBS) out.set(`_lean/bin/lib/${l}.js`, fs.readFileSync(path.join(__dirname, `${l}.js`)));
+  for (const c of CLI_COMMANDS) out.set(`_lean/bin/commands/${c}.js`, fs.readFileSync(path.join(INSTALLER_ROOT, 'commands', `${c}.js`)));
+  for (const [dep, keep] of Object.entries(CLI_DEPS)) {
+    const dir = resolveDep(dep);
+    for (const abs of walk(dir)) {
+      const rel = posix(path.relative(dir, abs));
+      if (keep(rel)) out.set(`_lean/bin/node_modules/${dep}/${rel}`, fs.readFileSync(abs));
+    }
+  }
+  out.set(GUARD_REL, fs.readFileSync(path.join(INSTALLER_ROOT, 'hooks', 'frozen-guard.js')));
+  return out;
+}
 
 // ── Platforms ───────────────────────────────────────────────────────────
 function loadPlatforms() {
@@ -20,7 +58,7 @@ function loadPlatforms() {
 function formatPlatformList() {
   const p = loadPlatforms();
   return Object.entries(p)
-    .map(([code, v]) => `${code.padEnd(18)} ${v.name.padEnd(26)} → ${v.installer.target_dir}${v.installer.commands_target_dir ? ` + ${v.installer.commands_target_dir}` : ''}${v.preferred ? '  (preferred)' : ''}`)
+    .map(([code, v]) => `${code.padEnd(18)} ${v.name.padEnd(26)} ${(v.support === 'full' ? 'full ' : 'basic').padEnd(6)} → ${v.installer.target_dir}${v.installer.commands_target_dir ? ` + ${v.installer.commands_target_dir}` : ''}${v.preferred ? '  (preferred)' : ''}`)
     .join('\n');
 }
 
@@ -69,6 +107,8 @@ function planFiles({ tools, orchestration }) {
       files.set(a.relPath, { type: 'agent', content: a.content });
     }
   }
+
+  for (const [rel, content] of cliFiles()) files.set(rel, { type: 'cli', content });
 
   for (const dir of targetDirs) {
     for (const s of skills) {
@@ -119,7 +159,7 @@ function removeEmptyParents(projectRoot, rel) {
 }
 
 // ── Install ─────────────────────────────────────────────────────────────
-function install({ projectRoot, tools, answers, orchestration }) {
+function install({ projectRoot, tools, answers, orchestration, guardHook = true, gitHook = false }) {
   const lp = leanPaths(projectRoot);
   const previous = readManifest(projectRoot);
   const prevFiles = readFilesManifest(lp.filesManifest);
@@ -164,6 +204,18 @@ function install({ projectRoot, tools, answers, orchestration }) {
     if (answers[key]) fs.mkdirSync(path.join(projectRoot, answers[key]), { recursive: true });
   }
 
+  // 4b. Hooks: the Claude Code guard (merged into .claude/settings.json) and the optional git pre-commit.
+  const hooks = [];
+  removeClaudeHook(projectRoot);
+  if (guardHook && tools.includes('claude-code')) {
+    addClaudeHook(projectRoot);
+    hooks.push('claude-code:frozen-guard');
+  }
+  if (gitHook) {
+    const r = writeGitHook(projectRoot);
+    hooks.push(r.ok ? 'git:pre-commit' : `git:pre-commit skipped (${r.reason})`);
+  } else removeGitHook(projectRoot);
+
   // 5. Manifests.
   fs.mkdirSync(lp.configDir, { recursive: true });
   const now = new Date().toISOString();
@@ -175,6 +227,7 @@ function install({ projectRoot, tools, answers, orchestration }) {
       targetDirs,
       skills: skills.map((s) => s.id),
       roleAgents: [...files].filter(([, f]) => f.type === 'agent').map(([rel]) => rel),
+      hooks,
     }),
   );
   fs.writeFileSync(lp.filesManifest, manifestRows.join('\n') + '\n');
@@ -194,7 +247,86 @@ function install({ projectRoot, tools, answers, orchestration }) {
     removed,
     backupDir,
     edited,
+    hooks,
   };
+}
+
+// ── Hooks ───────────────────────────────────────────────────────────────
+const GUARD_CMD = `node "$CLAUDE_PROJECT_DIR/${GUARD_REL}"`;
+const settingsPath = (root) => path.join(root, '.claude', 'settings.json');
+const isOurs = (h) => typeof h?.command === 'string' && h.command.includes('_lean/hooks/');
+
+function readSettings(root) {
+  const f = settingsPath(root);
+  if (!fs.existsSync(f)) return {};
+  try {
+    return JSON.parse(fs.readFileSync(f, 'utf8'));
+  } catch {
+    throw new Error(`${f} is not valid JSON — fix it or pass --no-guard-hook`);
+  }
+}
+
+/** Add the frozen-intent guard as a PreToolUse hook, keeping every other setting and hook. */
+function addClaudeHook(root) {
+  const s = readSettings(root);
+  s.hooks = s.hooks || {};
+  s.hooks.PreToolUse = s.hooks.PreToolUse || [];
+  s.hooks.PreToolUse.push({ matcher: 'Edit|MultiEdit|Write', hooks: [{ type: 'command', command: GUARD_CMD, timeout: 10 }] });
+  fs.mkdirSync(path.dirname(settingsPath(root)), { recursive: true });
+  fs.writeFileSync(settingsPath(root), JSON.stringify(s, null, 2) + '\n');
+}
+
+/** Remove only LEAN's hook entries; delete settings.json only if LEAN's hook was all it held. */
+function removeClaudeHook(root) {
+  const f = settingsPath(root);
+  if (!fs.existsSync(f)) return;
+  let s;
+  try {
+    s = JSON.parse(fs.readFileSync(f, 'utf8'));
+  } catch {
+    return;
+  }
+  const pre = s.hooks?.PreToolUse;
+  if (!Array.isArray(pre)) return;
+  const kept = pre.map((m) => ({ ...m, hooks: (m.hooks || []).filter((h) => !isOurs(h)) })).filter((m) => m.hooks.length);
+  if (kept.length === pre.length && kept.every((m, i) => m.hooks.length === pre[i].hooks.length)) return;
+  if (kept.length) s.hooks.PreToolUse = kept;
+  else delete s.hooks.PreToolUse;
+  if (!Object.keys(s.hooks).length) delete s.hooks;
+  if (!Object.keys(s).length) {
+    fs.rmSync(f);
+    removeEmptyParents(root, '.claude/settings.json');
+  } else fs.writeFileSync(f, JSON.stringify(s, null, 2) + '\n');
+}
+
+const GIT_MARK = '# lean-method pre-commit hook';
+function gitHookPath(root) {
+  const { execFileSync } = require('node:child_process');
+  const run = (...a) => execFileSync('git', ['-C', root, ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  try {
+    const top = run('rev-parse', '--show-toplevel');
+    return { file: path.resolve(root, run('rev-parse', '--git-path', 'hooks/pre-commit')), rel: posix(path.relative(top, root)) || '.' };
+  } catch {
+    return null;
+  }
+}
+
+function writeGitHook(root) {
+  const g = gitHookPath(root);
+  if (!g) return { ok: false, reason: 'not a git repository' };
+  if (fs.existsSync(g.file) && !fs.readFileSync(g.file, 'utf8').includes(GIT_MARK)) return { ok: false, reason: 'a pre-commit hook already exists' };
+  fs.mkdirSync(path.dirname(g.file), { recursive: true });
+  fs.writeFileSync(
+    g.file,
+    `#!/bin/sh\n${GIT_MARK} — blocks a commit that leaves the plan inconsistent. Bypass once with --no-verify.\ncd "$(git rev-parse --show-toplevel)" || exit 0\nnode "${g.rel}/_lean/bin/lean.js" check --directory "${g.rel}" || { echo "lean check failed — fix the plan, or commit with --no-verify"; exit 1; }\n`,
+    { mode: 0o755 },
+  );
+  return { ok: true };
+}
+
+function removeGitHook(root) {
+  const g = gitHookPath(root);
+  if (g && fs.existsSync(g.file) && fs.readFileSync(g.file, 'utf8').includes(GIT_MARK)) fs.rmSync(g.file);
 }
 
 // ── Uninstall ───────────────────────────────────────────────────────────
@@ -202,6 +334,8 @@ function uninstall(projectRoot, { keepCustom = true } = {}) {
   const lp = leanPaths(projectRoot);
   const files = readFilesManifest(lp.filesManifest);
   if (!files.size && !fs.existsSync(lp.dir)) return { removed: 0, found: false };
+  removeClaudeHook(projectRoot);
+  removeGitHook(projectRoot);
   let removed = 0;
   for (const rel of files.keys()) {
     const abs = path.join(projectRoot, rel);

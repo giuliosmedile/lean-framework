@@ -30,6 +30,7 @@ Every lean skill runs as an **orchestrator**: the session model holds the intent
 | `scout` | repo sweeps, source-doc extraction, retro evidence | low | read and summarize; the orchestrator re-checks what it uses |
 | `research` | web research digests | mid | needs judgment about sources |
 | `implement` | build implementation | mid | works from a frozen, explicit spec |
+| `test` | acceptance tests before implementation (full route) | mid | encodes the spec's criteria; the orchestrator judges and freezes them |
 | `review` | adversarial, edge-case, verification-gap lenses | mid | the orchestrator verifies every finding |
 | `check` | doc rubric, readiness check | mid | the orchestrator decides what to act on |
 | *(orchestrator)* | specs, ADs, stories, triage, routing, user dialogue | top | the judgment layer — never delegated |
@@ -50,7 +51,7 @@ Launch independent workers in parallel in one turn and wait for all of them. Tak
 ## 4. Escalation
 
 - A worker returns malformed output, says it couldn't finish, or its result fails the orchestrator's check → re-run it **once at the next tier up** (low → mid → top). If it still fails at top, the orchestrator does the job itself or HALTs.
-- In `lean-build`: a `bad_spec` loopback re-runs the implementer at the same tier; a second loopback on the same story escalates the implementer one tier.
+- In `lean-build`: a `bad_spec` loopback (wrong approach) re-runs the implementer one tier up; an `amend` patches in place at the same tier.
 - Never escalate silently: record it in the run's log line (below).
 
 ## 5. Guardrails — what never moves down a tier

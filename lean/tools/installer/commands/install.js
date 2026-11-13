@@ -25,6 +25,8 @@ module.exports = {
     ['--output-folder <path>', 'Plans folder relative to project root (default: plan)'],
     ['--style <style>', 'kiss | standard (default: kiss)'],
     ['--no-scout', 'Skip agent scouting (tiers default to inherit unless set with --set)'],
+    ['--no-guard-hook', 'Claude Code: don\'t add the frozen-intent guard hook to .claude/settings.json'],
+    ['--git-hook', 'Add a git pre-commit hook that runs the plan check (only if no other pre-commit hook exists)'],
     ['-y, --yes', 'Accept defaults and skip prompts'],
   ],
   action: async (opts) => {
@@ -110,8 +112,22 @@ module.exports = {
     if (answers.input_folder && answers.output_folder && path.normalize(answers.input_folder) === path.normalize(answers.output_folder))
       throw new Error('input_folder and output_folder must differ: LEAN never writes into your source documents.');
 
+    // ── Hooks ────────────────────────────────────────────────────────
+    let guardHook = opts.guardHook !== false && (existing?.hooks ? existing.hooks.includes('claude-code:frozen-guard') || !existing.tools.includes('claude-code') : true);
+    let gitHook = opts.gitHook || (existing?.hooks || []).includes('git:pre-commit');
+    if (interactive && !quick) {
+      if (tools.includes('claude-code') && opts.guardHook !== false)
+        guardHook = await ui.confirm('Claude Code: add a hook that refuses edits to frozen intent and frozen acceptance tests? (merged into .claude/settings.json)', guardHook);
+      if (!opts.gitHook) gitHook = await ui.confirm('Add a git pre-commit hook that runs the plan check?', gitHook);
+    }
+    const basic = tools.filter((t) => platforms[t] && platforms[t].support !== 'full');
+    if (basic.length) {
+      const msg = `Basic support for ${basic.map((t) => platforms[t].name).join(', ')}: the skills run, but on one model and with review in the same context — no cheap worker tiers, no blind reviewers. Full support: Claude Code, OpenCode.`;
+      interactive ? ui.info(msg) : process.stderr.write(msg + '\n');
+    }
+
     // ── Install ──────────────────────────────────────────────────────
-    const run = () => install({ projectRoot, tools, answers, orchestration });
+    const run = () => install({ projectRoot, tools, answers, orchestration, guardHook, gitHook });
     const res = interactive ? await ui.spin('Installing…', run) : run();
     const summary = ui.summary(res, { projectRoot, tools, orchestration, platforms });
     if (interactive) {

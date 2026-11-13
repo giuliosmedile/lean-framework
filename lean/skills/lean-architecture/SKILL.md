@@ -56,6 +56,8 @@ Put blocker open questions to the user in one kiss-shaped message. Set `status: 
 
 Read ARCHITECTURE.md and its Decision Log. Log the change, amend the affected AD's Rule in place (or add the next AD-n), never renumber. If stories already exist, list the story files (in `active` and `done` epics) whose `rules:` reference a changed AD, and suggest `lean-change course`.
 
+**Keep it readable as it grows:** when `lean-method check` warns `doc/log-size`, move all but the newest 10 Decision Log entries to `plan/ARCHITECTURE.log.md`, leaving a pointer line. Superseded ADs stay in place with a `superseded by AD-n` line (ids are never reused); when there are many, move them to `plan/ARCHITECTURE.archive.md`.
+
 ## Epic scope
 
 When pointed at one epic (`plan/epics/<E>-*/`), the project ARCHITECTURE.md is **binding and read-only**. Fix only what that epic's stories could diverge on and the project left open: its `Deferred` items, plus the epic's internal seams. Write these into the epic's `EPIC.md` → `## Epic decisions`, continuing the global AD numbering, and log them in its Decision Log. An epic decision that contradicts or weakens a project AD is a conflict to raise with the user, not a local override.

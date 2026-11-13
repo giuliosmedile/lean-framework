@@ -7,7 +7,7 @@
 const { section, table, statusOf } = require('./plan');
 
 const VERDICTS = ['high', 'medium', 'low', 'false', 'maybe-false'];
-const ROUTES = ['patch', 'bad_spec', 'intent_gap', 'defer', 'reject'];
+const ROUTES = ['patch', 'amend', 'bad_spec', 'intent_gap', 'defer', 'reject'];
 
 const zero = (keys) => Object.fromEntries(keys.map((k) => [k, 0]));
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : null);

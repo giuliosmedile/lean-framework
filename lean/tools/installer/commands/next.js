@@ -24,6 +24,7 @@ module.exports = {
     const lane = (l) => (l ? ` [${l}]` : '');
     const out = [];
     for (const s of r.inFlight) out.push(`resume   ${s.id}${lane(s.lane)} ${s.status} — ${rel(s.file)}`);
+    for (const s of r.claimed) out.push(`claimed  ${s.id}${lane(s.lane)} by ${s.owner}`);
     for (const s of r.blocked) out.push(`blocked  ${s.id}${lane(s.lane)} — ${s.reason || '(no reason)'}`);
     for (const s of r.next) out.push(`next     ${s.id}${lane(s.lane)} ${s.title} — ${rel(s.file)}`);
     if (!out.length) out.push('nothing ready — plan the next epic (lean-plan) or unblock a story');

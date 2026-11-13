@@ -21,6 +21,11 @@ const ROLE_TEXT = {
     body: 'Read the spec file named in your prompt and implement it; the spec is the sole source of truth. Simplest code that passes acceptance, nothing speculative. Report what you changed, how you verified it, and anything incomplete.',
     readOnly: false,
   },
+  test: {
+    description: 'LEAN test worker: turns a spec\'s acceptance criteria and edge-case matrix into failing tests, before any implementation exists.',
+    body: 'Read the spec file named in your prompt. Write tests that encode its Acceptance and Edge-Case Matrix, using the project\'s existing test setup. Write tests only — no production code, no stubs beyond what a test needs to compile. Run them and confirm each fails for the expected reason (missing behavior, not a typo or import error). Report the test files and one line per test.',
+    readOnly: false,
+  },
   review: {
     description: 'LEAN review worker: reviews a diff with the lens file named in the prompt and returns findings as text. Read-only.',
     body: 'Follow the lens file named in your prompt exactly against the content it names. Return findings as text in your final message. Do not edit anything.',

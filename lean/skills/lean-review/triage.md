@@ -18,7 +18,7 @@ Give exactly one verdict:
 - `false` — you checked and it doesn't happen. Write what disproves it.
 - `maybe-false` — the code and diff genuinely can't settle it. Write what would.
 
-Record **every** finding as one row in the triage log, never dropping or silently merging one. In a build spec the log is a table `| # | lens | verdict | route | evidence |` (see `lean-build/assets/story-spec-template.md`): `lens` is the reviewer's lens name, `verdict` one of the five above, `route` one of `patch | bad_spec | intent_gap | defer | reject` (rejected findings take `reject`), evidence one or two sentences. `lean-method metrics` counts these rows, so use exactly these words.
+Record **every** finding as one row in the triage log, never dropping or silently merging one. In a build spec the log is a table `| # | lens | verdict | route | evidence |` (see `lean-build/assets/story-spec-template.md`): `lens` is the reviewer's lens name, `verdict` one of the five above, `route` one of `patch | amend | bad_spec | intent_gap | defer | reject` (rejected findings take `reject`), evidence one or two sentences. `lean-method metrics` counts these rows, so use exactly these words.
 
 Then reject:
 - `false` findings.
@@ -35,12 +35,15 @@ Group survivors by shared root cause — only when the same defect produced both
 Caused or exposed by this change:
 
 - **intent_gap** — the frozen intent is incomplete; the spec can't settle it. Don't infer intent unless there's exactly one reading.
-- **bad_spec** — the spec should have prevented it (includes deviations from spec). When torn between bad_spec and patch, choose bad_spec: a spec-level fix produces more coherent code.
-- **patch** — the smallest fix is trivial, adds no public surface, and guards no state you didn't demonstrate. Otherwise → intent_gap (spec doesn't settle the fix) or bad_spec.
+- **bad_spec** — the spec's *approach* was wrong, so the code built on it is wrong in shape (wrong module, wrong data flow, wrong abstraction, a deviation the rest of the diff depends on). Patching would leave incoherent code. Costs a full revert and re-implementation.
+- **amend** — the spec *missed* something, but the approach holds and the rest of the diff is sound: a case, a rule, or an acceptance line to add. Amend the spec's non-frozen sections, then fix the code with a targeted change. Costs one patch round, not a rebuild.
+- **patch** — the smallest fix is trivial, adds no public surface, and guards no state you didn't demonstrate, and the spec needs no change. Otherwise → intent_gap (spec doesn't settle the fix), amend, or bad_spec.
+
+Choosing between them: ask "if I add this to the spec, does the existing code still have the right shape?" Yes → `amend`. No → `bad_spec`. When torn between `patch` and a spec route, choose the spec route (a spec-level record produces more coherent code); when torn between `amend` and `bad_spec`, choose `amend` unless two or more findings point at the same approach-level cause.
 
 Not this change's problem:
 
-- **defer** — pre-existing issues; groups that are all `maybe-false` but would be `medium`/`high` if true (record as unverified + what would settle it; if it would only be `low`, reject); fixes that would edit agent-context files (CLAUDE.md, AGENTS.md, rules).
+- **defer** — pre-existing issues; groups that are all `maybe-false` but would be `medium`/`high` if true (record as unverified + what would settle it; if it would only be `low`, reject); fixes that would edit agent-context files (CLAUDE.md, AGENTS.md, rules). Start those entries' summary with `agent-context:` so `lean-change retro` can turn them into proposed pitfalls.
 
 A group with any verified `high`/`medium`/`low` member routes by that, never to defer just because another member is `maybe-false`.
 

@@ -85,6 +85,11 @@ When the market, domain, or prior art would change decisions, launch a `research
 
 Read SPEC.md, UX.md, and the Decision Log. Capture the change as new log entries, surface conflicts with earlier decisions before applying, then edit the spec. **Capability IDs are stable**: never renumber, never reuse a retired ID; new capabilities get the next free number. If `plan/epics.yaml` exists, list the epics whose `caps` include a changed capability. In epics that are `active` or `done`, list the story files whose `caps` include it. Then suggest `lean-change course`.
 
+**Keep it readable as it grows** (every downstream skill reads SPEC.md whole). When `lean-method check` warns `spec/size` or `doc/log-size`:
+- **Retired capabilities** move, with their ids, to `plan/SPEC.archive.md` (same CAP format, plus a `retired:` line with date and reason). Their ids stay taken forever; `check` knows them from the archive.
+- **Decision Log rollover:** move all but the newest 10 entries to `plan/SPEC.log.md` (append, oldest first), leaving a line `Earlier decisions: SPEC.log.md`. Update mode reads the log file too when a change touches an old decision.
+- Never archive a capability an active or planned epic still claims.
+
 ## Review
 
 Validate mode: run `check` workers in parallel with the `doc-rubric.md` SPEC lens and the adversarial lens, verify their findings, report tiered (blockers first, then a one-line tail of the rest). Offer to roll findings into an Update.

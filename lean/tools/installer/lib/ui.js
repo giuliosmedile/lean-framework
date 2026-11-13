@@ -60,6 +60,8 @@ function summary(res, { tools, orchestration, platforms }) {
   ];
   if (res.commands) lines.push(`${pc.bold('Commands')}  ${res.commands} pointer files`);
   if (res.agents.length) lines.push(`${pc.bold('Agents')}    ${res.agents.length} role agents (${[...new Set(res.agents.map((a) => a.split('/').slice(0, 2).join('/')))].join(', ')})`);
+  lines.push(`${pc.bold('Plan CLI')}  node _lean/bin/lean.js check | next | freeze | metrics | claim`);
+  if (res.hooks?.length) lines.push(`${pc.bold('Hooks')}     ${res.hooks.join(', ')}`);
   lines.push('', pc.bold('Role → model'));
   for (const t of tools) {
     const per = Object.entries(orchestration.roles).map(([r, tier]) => `${r}=${resolveModel(tier, orchestration.tiers[t] || {})}`).join(' · ');

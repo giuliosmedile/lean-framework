@@ -17,6 +17,10 @@ updated: '{date}'
 
 <!-- How we know the epic is done, testable. Multi-lane default: the oracle fixture passes end to end on real code, on the integration branch. -->
 
+## Exit evidence
+
+<!-- Filled when the exit criterion is shown, never before: the end-to-end test that passed on the integration branch (name + commit), or the demo the user watched (date, who). lean-change retro can't accept the epic without it. -->
+
 ## Scope
 
 - **Covers:** CAP-…, QR-…

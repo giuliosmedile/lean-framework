@@ -61,7 +61,7 @@ plan/
 Rules:
 - **`docs/` is input only.** Skills read it and cite what they used (a file path, plus a section where it helps) in the doc's `sources:` frontmatter or Decision Log. They never create, edit, move, or delete anything in it; everything LEAN writes goes to `plan/`. Large files go to a `scout` worker for extraction rather than being loaded whole.
 - **Ids are global.** Epics are `E1`, `E2`, …; stories are `<epic>-<n>` (`E2-3`), with `E2-0` for an epic's contracts story and `E2-C1` for its contract changes. They're never renumbered or reused, so cross-epic `depends_on` and commit messages stay unambiguous.
-- **Status has one home.** A story's status is the `status` in its `.md` frontmatter (`todo | draft | ready | in-progress | in-review | done | blocked | retired`; `retired` stories stay listed but don't count). `stories.yaml` has no status. `epics.yaml` holds only the epic's own status (`planned | active | done`).
+- **Status has one home.** A story's status is the `status` in its `.md` frontmatter (`todo | draft | ready | in-progress | in-review | done | blocked | retired`; `retired` stories stay listed but don't count). `stories.yaml` has no status. `epics.yaml` holds only the epic's own status (`planned | active | done`). In lane work, the copy on the integration branch is authoritative; a lane branch may lag until it merges. Who is building a story right now is a claim (`lean-method claim`), not a status.
 - **Read only what's needed.** "What next" reads `epics.yaml` plus the active epic(s). A build reads one story file, its `EPIC.md` (and `CONTRACTS.md`), and the CAP/AD ids it cites. Finished epics are left alone.
 - **Always this tree,** even for a single epic: one layout, one code path.
 
@@ -76,8 +76,12 @@ Anything a script can decide, the script decides. Skills run these instead of wo
 | `lean-method next [--lane A]` | "what's next": in-flight, blocked, and the next ready story per epic and lane |
 | `lean-method freeze --story E2-3` (or `--file`) | records the hash of the `<frozen-after-approval>` block; `check` fails if it changes later |
 | `lean-method metrics [--epic E2] [--json]` | counting review findings, loops, escalations, tokens, and time across stories |
+| `lean-method claim --story E2-3 --owner <name>` (`--release`, `--list`) | deciding by hand who's building what: an atomic lock (a git ref) so parallel agents never take the same story |
+| `lean-method freeze --story E2-3 --tests a,b` (`--unlock`, `--unlock-tests`) | trusting the implementer not to touch the acceptance tests it must pass |
 
-**How to call it:** `lean-method …` if it's on the PATH (global install), else `npx --no-install lean-method …` (project devDependency). Add `--directory {project-root}` when not running from the root. If neither runs, do the same check by reading, as the skill describes, and say once that the CLI is missing.
+**How to call it:** wherever a skill says `lean-method <cmd>`, run `node {project-root}/_lean/bin/lean.js <cmd>`. The installer puts it there with its dependencies, so it needs nothing but Node. Without an install, use `lean-method <cmd>` (global) or `npx --no-install lean-method <cmd>` (devDependency). Add `--directory {project-root}` when not running from the root. If none runs, do the same check by reading, as the skill describes, and say once that the CLI is missing (`npx lean-method install` fixes it).
+
+**Guard hook (Claude Code):** the installer can add a PreToolUse hook that refuses any Edit/Write that would change frozen intent or a frozen acceptance test of a story in progress. When it blocks you, its message says why; don't work around it with shell edits. Renegotiate (intent) or judge the test (tests), unlock, edit, freeze again.
 
 **Reading the result:** `✖` errors must be fixed (or put to the user) before the step that needed the check; `▲` warnings are reported, not blocking. Never edit a file just to silence a finding you haven't understood. Use `--json` when you need to act on the findings one by one.
 

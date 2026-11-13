@@ -41,6 +41,7 @@ Read `epics.yaml`, this epic's `EPIC.md`, the SPEC capabilities it covers, ARCHI
 1. **How many people (or parallel agents) will work on this epic at the same time?**
 2. If more than one: their names or handles, and any ownership or skill split.
 3. If more than one: the integration branch, and whether lanes merge after every story (recommended) or at checkpoints.
+4. If more than one: **are the builders agents run by one person, or separate people?** Agents under one person → `contracts: lite` (recommended for that case); two or more people → `contracts: full`.
 
 Record the answers under `## Team` in EPIC.md. **One person → single lane:** skip steps 3–4.
 
@@ -57,7 +58,11 @@ Present the lanes as one table (lane · owner · modules · first story · natur
 
 ### 4. Contracts (2+ lanes)
 
-Fill `assets/contracts-template.md` → the epic's `CONTRACTS.md`. Story **`<E>-0`** implements it. It comes before any lane story, with `lane: shared, checkpoint: spec`.
+Fill `assets/contracts-template.md` → the epic's `CONTRACTS.md`. Story **`<E>-0`** implements it. It comes before any lane story, with `lane: shared, checkpoint: spec`. Record the level in `stories.yaml` → `contracts: full | lite`.
+
+**Lite** (agents run by one person: one head holds the whole picture, and `lean-method check --story` already catches trespass mechanically): CONTRACTS.md keeps only Lanes, Seams (owner + value rules + fake) and the skeleton. `<E>-0` acceptance keeps items 1, 3, 5 and 7 below (types, one fake per port, contract tests for the value rules, walking skeleton); drop the glossary, the schema-checked oracle fixtures (plain fixtures will do), the boundary test, seam checkpoint stories (the skeleton turning green on real code is the checkpoint) and the decisions-due table. Switch to full the moment a second person joins.
+
+**Full** (two or more people): everything below.
 
 **Seams.** List every port, gateway, or type that crosses a lane boundary. For each one:
 - the **owner of its real implementation** (lane + story). An unowned seam is the classic orphan, e.g. composition glue that lands in nobody's lane. The epic isn't ready while one exists.
@@ -73,9 +78,9 @@ Fill `assets/contracts-template.md` → the epic's `CONTRACTS.md`. Story **`<E>-
 6. A **boundary test**: lane modules don't import each other.
 7. A **walking skeleton**: the composition root wired with every fake runs the oracle fixture end to end as an automated test. It stays green on the integration branch as lanes swap fakes for real implementations.
 
-**Seam checkpoints.** For each seam, add a small `lane: integration` story that runs as soon as both sides are real. Its `depends_on` names both stories.
+**Seam checkpoints** (full). For each seam, add a small `lane: integration` story that runs as soon as both sides are real. Its `depends_on` names both stories.
 
-**Decisions due.** Every deferred decision that a story will need gets a decide-by story in CONTRACTS.md.
+**Decisions due** (full). Every deferred decision that a story will need gets a decide-by story in CONTRACTS.md.
 
 **Contract changes after freeze** (`<E>-0` done → CONTRACTS `status: frozen`): raised through `lean-change course`, landed as one small `<E>-C<n>` story (`lane: shared`) that updates types, fakes, fixtures, and contract tests together. Every lane then rebases.
 

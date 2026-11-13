@@ -15,7 +15,7 @@ const TOML = require('smol-toml');
 const PKG_ROOT = path.resolve(__dirname, '../../..');
 const MODULE_YAML = path.join(PKG_ROOT, 'src/module.yaml');
 
-const ROLES = { scout: 'low', research: 'mid', implement: 'mid', review: 'mid', check: 'mid' };
+const ROLES = { scout: 'low', research: 'mid', implement: 'mid', test: 'mid', review: 'mid', check: 'mid' };
 
 const HEADER = (scope) => `# ─────────────────────────────────────────────────────────────────
 # Installer-managed (${scope} scope). Regenerated on every install — treat as read-only.

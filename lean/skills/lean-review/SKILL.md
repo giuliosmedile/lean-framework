@@ -16,9 +16,10 @@ Run independent reviewers (lenses) in parallel against one piece of content, the
 | adversarial | `lenses/adversarial.md` | anything |
 | edge-case | `lenses/edge-case-hunter.md` | code |
 | verification-gap | `lenses/verification-gap.md` | code that changes behavior |
+| security | `lenses/security.md` | code that touches a trust boundary: auth, personal data, money, secrets, external input, files, shell, queries |
 | doc-rubric | `lenses/doc-rubric.md` | SPEC.md, UX.md, ARCHITECTURE.md, epics.yaml, an epic folder, CONTRACTS.md |
 
-If the user names lenses, run exactly those. Otherwise: **code** → adversarial + edge-case + verification-gap; **planning doc** → doc-rubric + adversarial; **other prose** → adversarial.
+If the user names lenses, run exactly those. Otherwise: **code** → adversarial + edge-case + verification-gap, plus security when the diff touches a trust boundary (see the table); **planning doc** → doc-rubric + adversarial; **other prose** → adversarial.
 
 ## Run
 

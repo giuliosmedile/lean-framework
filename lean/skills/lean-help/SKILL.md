@@ -25,10 +25,10 @@ Three jobs, picked from the request:
 | `lean-build` | implement a story, feature, bug fix, or change: plan → code → review → commit | nothing for small work; a story for planned work | build spec + code + commit | next story |
 | `lean-review` | an independent review of a diff, branch, or planning doc, **only when the user says "review"** | something to review | triaged findings | fixes via build |
 | `lean-change` | `course`: a significant mid-flight change or a contract change · `retro`: a finished epic | epics exist | `plan/changes/` proposal / epic `retro.md` | plan or build |
-| `lean-kit` | see or change config: model tiers, role agents, style | nothing | config overrides | — |
+| `lean-kit` | see or change config: model tiers, role agents, style, the guard hook and the plan CLI | nothing | config overrides | — |
 | `lean-help` | this: routing, orientation, explanations | nothing | — | — |
 
-Installer commands (terminal, not skills): `npx lean-method install | scout | status | uninstall`.
+Installer commands (terminal, not skills): `npx lean-method install | scout | status | uninstall`. Plan commands (also used by the skills): `node _lean/bin/lean.js check | next | freeze | metrics | claim`.
 
 ## Route
 

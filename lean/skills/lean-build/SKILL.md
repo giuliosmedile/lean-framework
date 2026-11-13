@@ -16,17 +16,20 @@ Speak the user's language. Never push to a remote. Never edit anything inside `<
 | You (top tier) | Workers |
 |---|---|
 | route, spec, frozen intent, checkpoint | `scout`: code investigation |
+| approve the acceptance tests | `test`: writes failing acceptance tests from the spec (full route) |
 | judge the diff against the spec | `implement`: writes the code from the spec |
-| triage every review finding | `review`: the three lenses |
+| triage every review finding | `review`: the lenses (three, plus security when it applies) |
 | everything said to the user (kiss shape) | |
 
 **KISS is the default build posture:** the spec's Approach is the simplest one that passes acceptance (`kiss.md` §A), prefer the small route whenever it honestly applies, and treat over-engineering found in review as a defect.
 
 Shared files from the sibling `lean-review` skill (install them together):
 - `{skill-root}/../lean-review/triage.md`
-- `{skill-root}/../lean-review/lenses/adversarial.md`, `edge-case-hunter.md`, `verification-gap.md`
+- `{skill-root}/../lean-review/lenses/adversarial.md`, `edge-case-hunter.md`, `verification-gap.md`, `security.md`
 
 **`--auto` mode** (unattended loop): never wait for a human. Wherever this file says HALT, instead write the question into the story file, set its `status: blocked` with `blocked_reason`, report it, and stop. With no story given, take the next story (below) whose `depends_on` are all `done`.
+
+**Claim before you build** (planned stories, whenever more than one agent or person may be building at once — always in `--auto`): run `lean-method claim --story <id> --owner <your agent or user name>` before step 2. Exit 1 means someone else holds it: take the next story instead (`lean-method next` lists claimed stories separately). Release at step 5 (`claim --story <id> --release`), or when you hand the story back as `blocked`. In lane work, story status is authoritative on the **integration branch**; claims are git refs shared by every worktree of the clone, so they work across worktrees on one machine, not across machines.
 
 ## 1. Resolve
 
@@ -71,6 +74,7 @@ Special stories:
 - **Intent gaps** — things the user would notice in the result that neither the request nor the code settles. (Choices the user wouldn't notice are yours — decide and record them.)
 - **Irreversibles** — migrations, data deletion/mutation, external side effects, deploy/config triggers.
 - **Footprint** — files changed; new things other code will depend on.
+- **Trust boundary** — does it touch auth, personal data, money, secrets, external input, files, shell, or query construction (or does the story's SPEC capability carry such a concern)? If yes, set `security: true`: the security lens joins the review.
 
 **Growing the story file.** Keep its frontmatter (`id`, `epic`, `lane`, `caps`, `rules`, `seams`, `checkpoint`) and add the build fields from `assets/story-spec-template.md`. Its `## Acceptance` moves into the Intent's **Acceptance**. Ad-hoc work starts a fresh file from the template.
 
@@ -88,14 +92,20 @@ Special stories:
 
 If none apply, the intent was already approved during planning: set `status: ready` and continue.
 
-**Freeze.** Whenever the frozen block is approved (at the checkpoint, at `status: ready` without one, and again after an intent_gap is renegotiated), run `lean-method freeze --story <id>` (ad-hoc: `--file <spec>`). From then on `check` fails if anyone, the implementer included, edits frozen intent.
+**Freeze.** Whenever the frozen block is approved (at the checkpoint, at `status: ready` without one, and again after an intent_gap is renegotiated), run `lean-method freeze --story <id>` (ad-hoc: `--file <spec>`). From then on `check` fails if anyone, the implementer included, edits frozen intent (and the installed Claude Code guard hook refuses the edit outright). To renegotiate: `freeze --unlock`, edit with the human's agreement, freeze again.
+
+**Acceptance tests first (full route).** Before any implementation, launch a `test` worker:
+
+> Read {spec_file}. Write tests that encode its Acceptance criteria and every Edge-Case Matrix row, using the project's existing test setup and conventions. Tests only: no production code. Run them and confirm each fails for the expected reason (missing behavior, not a typo or import error). Do not invoke skills or spawn subagents. Report the test files and one line per test: which criterion or row it encodes.
+
+Judge what it wrote: every criterion and matrix row has a test, each test asserts the behavior (not just "no error"), and each one fails for the right reason. Fix or re-run what doesn't hold. Then freeze them: `lean-method freeze --story <id> --tests <file1,file2>`. List the test files under Verification. The implementer makes them pass and may not edit them; `check --story` fails if it does. Skip this step on the small route, or when the behavior can't be tested deterministically (say why in Implementation Notes).
 
 ## 3. Implement
 
 1. Record `baseline_commit` (current HEAD, or `NO_VCS`) in frontmatter unless already set. Set `status: in-progress` and `metrics.started` (ISO time) unless already set.
 2. **Full route:** launch a fresh-context `implement` worker with exactly this prompt (paths filled in) and nothing else — the spec is the whole brief:
 
-   > Read {spec_file} fully and implement it — the spec is the sole source of truth. Load every file listed in its frontmatter `context:` before you start. Follow the engineering rules in {kiss_file} §A: the simplest code that passes the acceptance criteria, nothing speculative. Add decisions and surprises to its Implementation Notes. Do not invoke skills or spawn subagents. When done, report in ≤ 10 lines: what you changed, how you verified it, and anything left incomplete or risky.
+   > Read {spec_file} fully and implement it — the spec is the sole source of truth. Load every file listed in its frontmatter `context:` before you start. Follow the engineering rules in {kiss_file} §A: the simplest code that passes the acceptance criteria, nothing speculative. The test files in its frontmatter `frozen_tests` are fixed: make them pass and never edit them; if you believe one is wrong, stop and report why instead of changing it. Add decisions and surprises to its Implementation Notes. Do not invoke skills or spawn subagents. When done, report in ≤ 10 lines: what you changed, how you verified it, and anything left incomplete or risky.
 
    `{kiss_file}` = absolute path of `lean-kit/kiss.md`. Keep the worker addressable for review fixes. Without subagents, implement it yourself from the spec.
 
@@ -103,7 +113,7 @@ If none apply, the intent was already approved during planning: set `status: rea
 
    **Small route:** implement directly. If you discover an intent gap, an irreversible step, or growing scope, stop, record why in Implementation Notes, switch to `route: full`, and return to step 2.
 3. **Judge the diff, not the report.** Write the unified diff since `baseline_commit` (untracked files included) to a uniquely named file in the system temp dir and read it. Check every task and acceptance criterion; tick tasks `[x]`; finish anything missing.
-4. **Matrix audit.** If an Edge-Case Matrix exists, every row needs a test that ran and passed. A test that didn't run (skipped, filtered, unregistered) counts as missing. If a test disagrees with the matrix, fix the code — never the expectation; if the row itself is ambiguous, HALT.
+4. **Matrix audit.** If an Edge-Case Matrix exists, every row needs a test that ran and passed. A test that didn't run (skipped, filtered, unregistered) counts as missing. If a test disagrees with the matrix, fix the code — never the expectation; if the row itself is ambiguous, HALT. If the implementer reports a frozen test is wrong, judge it yourself: a test that contradicts the spec is a `test` worker defect (`freeze --unlock-tests`, fix the test, freeze again, log it in the Spec Change Log); a test that is right means the code is wrong.
 5. Run the Verification commands. Lane stories also run the boundary test, the contract tests of their seams, and the walking skeleton.
 6. **Mechanical gate:** run `lean-method check --story <id>`. A `story/frozen-changed` error means frozen intent was edited: restore the block from the approved version (git) — never re-freeze to make it pass. A `diff/trespass` error (lane stories: a change outside the lane's modules, or to the contracts, fakes, or fixtures) is reverted before review; it isn't negotiable inside a build. Also judge the diff yourself for trespass the lane map can't see (e.g. shared test helpers).
 
@@ -118,29 +128,34 @@ Launch all reviewers **at once**, as context-free `review` workers at that role'
 | adversarial | lens `adversarial.md` + diff path | ✓ | ✓ |
 | edge-case | lens `edge-case-hunter.md` + diff path + spec path as claims file (read last) | ✓ | |
 | verification-gap | lens `verification-gap.md` + diff path | ✓ | ✓ (if behavior changed) |
+| security | lens `security.md` + diff path | if `security: true` or the diff crosses a trust boundary | same |
 
 Each prompt gives absolute paths (never pasted diff text) and ends: *"Do not invoke skills or spawn subagents — you are the reviewer. Return your findings as text in your final message."* Without subagents: write each prompt with its files inlined into `plan/adhoc/review-prompts/`, HALT, and ask the user to run them in separate sessions and paste back the findings.
 
 **Triage** every finding per `triage.md` **yourself** (never on a worker; reviewer tiers are cheap precisely because you verify) and log each as one row of the spec's Review Triage Log table (exact vocabulary: `triage.md` §1). Then act on the routes, highest first:
 
 - **intent_gap** (full route) → revert the code changes, HALT to resolve with the human, update the frozen block, back to step 2.
-- **bad_spec** (full route) → write KEEP notes (what worked and must survive), revert the code changes, amend the non-frozen spec sections respecting every earlier Spec Change Log entry, append a change-log entry, back to step 3.
-- On the small route, an intent_gap or bad_spec → HALT and ask (the small route has no spec to loop through).
-- Before any loopback, increment `review_loops`; past **3**, HALT and escalate to the human. On the second bad_spec loopback for this spec, re-run the `implement` worker one tier up.
-- **patch** (only once no loopback is pending) → send the implementation subagent one message — *"Review found problems. Fix each with the smallest change that does the job; run only the tests covering files you edit. Reply with what you changed."* plus one line per fix (`file — what's wrong — what the fix must do`). Apply them yourself if it's gone. Re-run Verification; if it fails and can't be fixed, HALT.
+- **bad_spec** (full route; the approach was wrong) → write KEEP notes (what worked and must survive), revert the code changes, amend the non-frozen spec sections respecting every earlier Spec Change Log entry, append a change-log entry, back to step 3. On the **first** bad_spec loopback, re-run the `implement` worker one tier up: a wrong approach is the expensive failure, so don't repeat it at the same tier.
+- **amend** (the spec missed something; the approach holds) → append a Spec Change Log entry, amend the non-frozen spec sections (Tasks, Edge-Case Matrix, Code Map), then handle the code change like a **patch** below. If the amendment adds acceptance tests, the `test` worker writes them and you re-freeze (step 2 → *Acceptance tests*). No revert. Doesn't count as a loopback.
+- On the small route, an intent_gap or bad_spec → HALT and ask (the small route has no spec to loop through); an amend → switch to `route: full` and record the amendment.
+- Before any loopback (intent_gap, bad_spec), increment `review_loops`; past **3**, HALT and escalate to the human.
+- **patch** (and amend fixes; only once no loopback is pending) → send the implementation subagent one message — *"Review found problems. Fix each with the smallest change that does the job; run only the tests covering files you edit. Reply with what you changed."* plus one line per fix (`file — what's wrong — what the fix must do`). Apply them yourself if it's gone. Re-run Verification; if it fails and can't be fixed, HALT.
 - **defer** → append to the epic's `deferred.md` (or `plan/deferred.md` for ad-hoc work) per `triage.md`.
 
 ## 5. Finish
 
-1. Fill the frontmatter `metrics:` block (`orchestration.md` §6): the model each role actually ran on, escalations, token counts the harness reported (else leave `null`), and `finished`. Set `status: done`. If this was the epic's last open story, say so in `Next:` and recommend `lean-plan status` (it closes the epic) and `lean-change retro`.
-2. If git is available and the tree is dirty, commit locally with a conventional message from the spec title. Lane stories: remind the user (in `Next:`) to merge into the integration branch per the plan's cadence, and name any seam checkpoint this story just unblocked.
-3. Report in the kiss shape, nothing more:
+1. Write `## How to review` in the story file (≤ 5 bullets, for the human): the 1–3 files where the real logic lives, what's risky or surprising, and how to try it by hand (a command, a URL, an input). It's the part of a walkthrough that matters; skip nothing to fit it, but don't pad it.
+2. Fill the frontmatter `metrics:` block (`orchestration.md` §6): the model each role actually ran on, escalations, token counts the harness reported (else leave `null`), and `finished`. Set `status: done`. If this was the epic's last open story, say so in `Next:` and recommend `lean-plan status` (it closes the epic) and `lean-change retro`.
+3. Release the claim, if you made one: `lean-method claim --story <id> --release`.
+4. If git is available and the tree is dirty, commit locally with a conventional message from the spec title. Lane stories: remind the user (in `Next:`) to merge into the integration branch per the plan's cadence, and name any seam checkpoint this story just unblocked.
+5. Report in the kiss shape, nothing more:
 
    ```
    **lean-build · done** — {story id}: {what changed, one line}
    | review | {N findings → x patched, y deferred, z rejected} |
    | verify | {pass / what ran} |
    | commit | {hash} |
-   | workers | {scout=… implement=… review=…×3, escalations=n, tokens=… or "not reported"} |
+   | workers | {scout=… test=… implement=… review=…×3, escalations=n, tokens=… or "not reported"} |
+   | review it | {the How-to-review bullets, ≤ 3 lines} |
    Next: {next story id/title} · PR · other change
    ```

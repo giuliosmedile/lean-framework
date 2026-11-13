@@ -13,9 +13,11 @@ route: ''              # small | full
 baseline_commit: ''    # set before the first code change; never overwritten
 review_loops: 0
 frozen_sha256: ''      # written by `lean-method freeze` when intent is approved; `check` fails if the frozen block changes
+frozen_tests: []       # written by `lean-method freeze --tests` (full route): acceptance tests the implementer may not edit
+security: false        # true when the change touches a trust boundary — adds the security lens to review
 context: []            # project docs the implementer must read (SPEC.md, ARCHITECTURE.md, UX.md …) — only what applies
 metrics:               # filled at finish; aggregated by `lean-method metrics`. null = the harness didn't report it — never estimate
-  models: { orchestrator: '', scout: '', implement: '', review: '' }   # model each role actually ran on (after escalations)
+  models: { orchestrator: '', scout: '', test: '', implement: '', review: '' }   # model each role actually ran on (after escalations)
   escalations: 0
   worker_tokens: null        # sum of the token counts the harness reported for this story's workers
   orchestrator_tokens: null  # only if the harness reports the session's own usage
@@ -67,13 +69,17 @@ metrics:               # filled at finish; aggregated by `lean-method metrics`. 
 
 - `command` — expected result
 
+## How to review
+
+<!-- Written at finish, for the human: ≤ 5 bullets — where the real logic lives, what's risky, how to try it by hand. -->
+
 ## Implementation Notes
 
 <!-- Append-only during implementation: decisions, surprises. -->
 
 ## Spec Change Log
 
-<!-- Append-only, written on bad_spec loopbacks: triggering finding, what was amended, the bad state avoided, KEEP instructions. -->
+<!-- Append-only, written on bad_spec loopbacks and amends: triggering finding, what was amended, the bad state avoided, KEEP instructions. -->
 
 ## Review Triage Log
 

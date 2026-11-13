@@ -13,27 +13,35 @@ npx lean-method status             # installed version, tools, effective role �
 npx lean-method uninstall          # removes what it installed; keeps _lean/custom/ and your plans
 ```
 
-Plan tooling: deterministic, no model involved. The skills call these instead of spending tokens on bookkeeping:
+Plan tooling: deterministic, no model involved. The skills call these instead of spending tokens on bookkeeping. `install` copies them into `_lean/bin/` with their three dependencies (~660 KB), so they run with plain Node, no npm:
 
 ```bash
-lean-method check [--epic E2]          # lint the plan tree — exit 1 on errors (CI / pre-commit friendly)
-lean-method check --story E2-3         # one story: frozen intent intact, spec size, open deps, lane trespass since baseline_commit
-lean-method next [--lane A]            # in-flight, blocked, and the next ready story per epic and lane
-lean-method freeze --story E2-3        # hash the approved <frozen-after-approval> block
-lean-method metrics [--epic E2] --json # loops, escalations, findings by verdict / lens / reviewer model, tokens, time
+node _lean/bin/lean.js check [--epic E2]          # lint the plan tree — exit 1 on errors
+node _lean/bin/lean.js check --story E2-3         # one story: frozen intent and tests intact, spec size, open deps, lane trespass
+node _lean/bin/lean.js next [--lane A]            # in-flight, claimed, blocked, and the next ready story per epic and lane
+node _lean/bin/lean.js freeze --story E2-3 [--tests a,b]   # hash the approved frozen block (and lock the acceptance tests)
+node _lean/bin/lean.js claim --story E2-3 --owner me       # atomic lock so parallel agents never take the same story
+node _lean/bin/lean.js metrics [--epic E2] --json # loops, escalations, findings by verdict / lens / reviewer model, tokens, time
 ```
 
-For the skills to find these offline, install the package as a devDependency (`npm i -D lean-method`) or globally. Without it the skills fall back to checking by reading.
+The same commands are on the package (`npx lean-method check …`).
+
+**Hooks** (asked at install, removed by uninstall):
+- **Guard (Claude Code, on by default):** a PreToolUse hook, merged into `.claude/settings.json` next to your own settings, that refuses any Edit/Write changing a story's frozen intent, or a frozen acceptance test while its story is being built. Prose asks the model to behave; the hook makes it. (Shell edits aren't intercepted; `check --story` still catches them.)
+- **Git pre-commit (off by default, `--git-hook`):** runs `check` and blocks a commit that leaves the plan inconsistent. Never overwrites an existing pre-commit hook.
+
+**Support levels.** `full`: Claude Code and OpenCode, where cheap worker tiers, blind parallel review and the fresh-context implementer all work. Every other target (`--list-tools` shows the level) is `basic`: the skills install and run, but on one model and with review in the same context, which removes most of what makes LEAN cheaper and safer. The installer says so when you pick one.
 
 What `install` does:
 
 1. **Scouts** the machine for coding agents (Claude Code, OpenCode, Codex, Gemini CLI, Cursor). For each one it finds the session model, whether it can give a subagent its own model, and the models it can reach. It then suggests mid/low worker tiers; sibling models guessed from the session id are flagged "verify".
-2. Asks which **tools** to install for (same 50 targets as BMAD, detected ones pre-selected), then the **questions** in `src/module.yaml`: name, project, languages, input folder (`docs`), plans folder (`plan`), style.
+2. Asks which **tools** to install for (same 50 targets as BMAD, detected ones pre-selected; only Claude Code and OpenCode have full support, see below), then the **questions** in `src/module.yaml`: name, project, languages, input folder (`docs`), plans folder (`plan`), style.
 3. **Helps you choose tiers** per tool: shows role → tier, the suggestion and why, and lets you pick models (or type one). Also asks whether reviewers should run on the session model.
 4. **Installs**:
    - the skills into each tool's skills folder;
    - OpenCode command pointers;
-   - **role agents** (`lean-scout`, `lean-implement`, `lean-review`, `lean-check`, `lean-research`) in `.claude/agents/` and `.opencode/agents/`, each carrying its model, so the tool itself runs workers on the cheaper model;
+   - **role agents** (`lean-scout`, `lean-implement`, `lean-test`, `lean-review`, `lean-check`, `lean-research`) in `.claude/agents/` and `.opencode/agents/`, each carrying its model, so the tool itself runs workers on the cheaper model;
+   - the plan CLI in `_lean/bin/` and the guard hook in `_lean/hooks/`;
    - the `_lean/` config and the manifests.
 
 Non-interactive, as in BMAD: `--yes --tools claude-code,opencode --set orchestration.tiers.claude-code.low=haiku --set style=standard`. Run `--list-tools` and `--list-options` for the valid values. On an existing install, `--action update` re-asks with your previous answers as defaults, and `--action quick-update` keeps them.
@@ -46,6 +54,8 @@ _lean/
   custom/config.user.toml personal overrides — never touched
   _config/               manifest.yaml · skill-manifest.csv · files-manifest.csv (sha256 per installed file)
   _backups/<timestamp>/  installed files you had edited, saved before an update overwrote them
+  bin/                   the plan CLI (lean.js) + its vendored dependencies — commit it with the skills
+  hooks/                 frozen-guard.js (Claude Code PreToolUse hook)
 ```
 
 Not on the npm registry yet. From a local checkout: `npm pack` in `lean/`, then `npx --package=./lean-method-0.4.0.tgz lean-method install`.
@@ -73,11 +83,11 @@ Every skill is an **orchestrator** on the session model. Bounded jobs go to chea
 | Role | Default tier | On an Opus session |
 |---|---|---|
 | orchestrator: specs, ADs, stories, triage, everything said to the user | top | Opus |
-| `implement`, `review`, `check`, `research` | mid | Sonnet |
+| `implement`, `test`, `review`, `check`, `research` | mid | Sonnet |
 | `scout` (repo sweeps, doc extraction, retro evidence) | low | Haiku |
 
 - **Tiers** are chosen at install time after scouting, and stored per tool in `_lean/config.user.toml`. They're also baked into the role agents, which the skills spawn by name (`lean-<role>`). Without an install, tiers are detected from the session model. Unknown models and tools without per-subagent model selection fall back to `inherit`.
-- **Escalation:** a worker that fails or returns bad output is re-run once a tier up. The implementer moves up a tier on the second bad-spec loopback.
+- **Escalation:** a worker that fails or returns bad output is re-run once a tier up. The implementer moves up a tier on the first bad-spec loopback (a wrong approach); an `amend` (the spec missed something) is patched in place.
 - **Guardrails:** triage, frozen intent, ADs, IDs and user decisions are never delegated. Verification-gap findings are trusted without re-checking only when that reviewer ran at top.
 - **Spend is measured:** each build fills a `metrics:` block in its story file (model per role, escalations, tokens as the harness reports them, start/finish). `lean-method metrics` aggregates it with the Review Triage Log rows, so cost and review quality per tier are numbers, not impressions.
 - Run `lean-kit` ("configure lean") to see or change the resolved tiers.
@@ -163,7 +173,10 @@ Every planning doc ends with a `## Decision Log` — append-only, one line per d
 | correct-course, retrospective | **lean-change** | Two modes, one short skill. |
 | help | **lean-help** | Routes the request: runs the matching skill when the fit is clear, otherwise recommends one; reads plan state for "what next"; explains LEAN from a bundled guide. |
 | customize | **lean-kit** | Config view + overrides in `_lean/custom/`. |
-| agent-* personas, party-mode, advanced-elicitation, brainstorming, deep-recon, project-context, walkthrough, qa-generate-e2e-tests | — | Dropped. See below. |
+| project-context | **lean-change** retro | Narrowed: each retro proposes ≤ 3 evidence-backed pitfalls for `AGENTS.md`/`CLAUDE.md`, written only when you approve. |
+| walkthrough | **lean-build** finish | Narrowed: a ≤ 5-bullet `## How to review` in the story file (where the logic lives, what's risky, how to try it). |
+| qa-generate-e2e-tests | **lean-build** | Acceptance tests are written first by a `test` worker and frozen; the verification-gap lens catches what's still untested. |
+| agent-* personas, party-mode, advanced-elicitation, brainstorming, deep-recon | — | Dropped. See below. |
 
 ## What was cut, and why
 
@@ -181,8 +194,10 @@ Every planning doc ends with a `## Decision Log` — append-only, one line per d
 2. Architecture as invariants only (Binds / Prevents / Rule).
 3. Small single-goal build specs with frozen, human-owned intent and an Open Questions gate.
 4. Implementation in a fresh subagent with the spec as sole source of truth.
-5. Three blind, parallel reviewers + verify-then-route triage (intent_gap / bad_spec / patch / defer) with loopback.
+5. Three blind, parallel reviewers (plus a security lens at trust boundaries) + verify-then-route triage (intent_gap / bad_spec / amend / patch / defer) with loopback.
 6. Readiness check before building; deferred-work log; a defined path for mid-flight change.
+7. Acceptance tests written before the code by a separate worker, frozen, and enforced.
+8. An epic is accepted only on demonstrated exit evidence (an e2e test or a demo you watched).
 
 ## Risks to watch in the experiment
 
@@ -193,6 +208,10 @@ The reviewer-tier and loopback risks show up in `lean-method metrics --json` (fi
 - KISS caps may squeeze out a load-bearing detail → watch for intent_gap loopbacks traced to a spec that hit its cap.
 - Skipping the spec checkpoint by default → watch for intent_gap loopbacks in build.
 - Decision Log inside docs instead of a memlog → watch whether interrupted runs resume cleanly.
+
+## Comparing against BMAD
+
+The metrics only mean something against a baseline. [COMPARISON.md](COMPARISON.md) is the protocol: the same small feature built twice (BMAD and LEAN), same spec and model, and what to record.
 
 ## Development
 

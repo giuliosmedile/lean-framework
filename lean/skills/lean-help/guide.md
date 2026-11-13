@@ -57,9 +57,10 @@ plan/                             (the folder name comes from core.output_folder
 - **Architecture records only invariants.** These are the decisions two independently built stories could otherwise get wrong in incompatible ways.
 - **Stories point, they don't copy.** A story references CAP/AD ids and holds only its own acceptance criteria.
 - **Build specs freeze intent.** Once a spec is approved, the `<frozen-after-approval>` part changes only if you renegotiate it. Open questions block coding.
-- **Review routes problems back to their source.** Three blind reviewers run in parallel. Each finding is verified, then sent to one of four places:
+- **Review routes problems back to their source.** Three blind reviewers run in parallel (four when the change touches a trust boundary: the security lens). Each finding is verified, then sent to one of four places:
   - `intent_gap` → back to you
-  - `bad_spec` → fix the spec, redo the code
+  - `bad_spec` → the approach was wrong: fix the spec, redo the code
+  - `amend` → the spec missed something: add it to the spec, patch the code
   - `patch` → fix now
   - `defer` → `deferred.md`
 - **The spec checkpoint is conditional.** Build asks you to approve its spec only when there are open questions, something can't be undone, the story is marked `checkpoint: spec`, or the work is unplanned.
@@ -71,7 +72,7 @@ The session model is the **orchestrator**: it writes specs, decides, verifies, a
 | Role | Default tier | E.g. on an Opus session |
 |---|---|---|
 | orchestrator | top | Opus |
-| implement · review · check · research | mid | Sonnet |
+| implement · test · review · check · research | mid | Sonnet |
 | scout (search, extraction) | low | Haiku |
 
 - **Role agents.** The installer creates `lean-<role>` agents in `.claude/agents/` and `.opencode/agents/`, each carrying its model. The skills spawn them by name.
@@ -115,7 +116,10 @@ When planning an epic, `lean-plan` asks how many people (or agents) will work on
 | correct-course, retrospective | `lean-change` |
 | customize | `lean-kit` |
 | help | `lean-help` |
-| agent personas, party-mode, brainstorming, deep-recon, advanced-elicitation, walkthrough, qa-e2e, project-context | dropped |
+| project-context | narrowed into `lean-change retro`: ≤ 3 approved pitfalls for AGENTS.md per retro |
+| walkthrough | narrowed into `lean-build`: a `## How to review` note per story |
+| qa-generate-e2e-tests | `lean-build`: acceptance tests written first, frozen |
+| agent personas, party-mode, brainstorming, deep-recon, advanced-elicitation | dropped |
 
 **Main cuts:**
 - the startup boilerplate repeated in every skill;
@@ -133,17 +137,18 @@ npx lean-method status      # what's installed, effective role → model, files 
 npx lean-method uninstall   # keeps _lean/custom/ and your plans
 ```
 
-Plan tooling — deterministic, no model involved (the skills call these too):
+Plan tooling — deterministic, no model involved (the skills call these too). Installed to `_lean/bin/`, runs with plain Node:
 
 ```bash
-lean-method check [--epic E2]        # lint the plan tree: ids, status, deps, CAP coverage, lanes, seams, frozen intent, spec size
-lean-method check --story E2-3       # one story: frozen block intact, size, open deps, lane trespass since baseline_commit
-lean-method next [--lane A]          # in-flight, blocked, and next ready story per epic/lane
-lean-method freeze --story E2-3      # hash the approved frozen block; check fails if it changes
-lean-method metrics [--epic E2] [--json]   # loops, escalations, findings by verdict/lens/model, tokens, time
+node _lean/bin/lean.js check [--epic E2]     # lint the plan tree: ids, status, deps, CAP coverage, lanes, seams, frozen intent/tests, sizes
+node _lean/bin/lean.js check --story E2-3    # one story: frozen block and tests intact, size, open deps, lane trespass
+node _lean/bin/lean.js next [--lane A]       # in-flight, claimed, blocked, and next ready story per epic/lane
+node _lean/bin/lean.js freeze --story E2-3 [--tests a,b]   # lock approved intent (and acceptance tests)
+node _lean/bin/lean.js claim --story E2-3 --owner me       # atomic lock so two agents never build the same story
+node _lean/bin/lean.js metrics [--epic E2] [--json]        # loops, escalations, findings by verdict/lens/model, tokens, time
 ```
 
-Install the package as a devDependency (`npm i -D lean-method`) or globally so these run offline; skills fall back to reading when the CLI is missing.
+Hooks: on Claude Code a guard hook refuses edits to frozen intent and frozen tests; optionally a git pre-commit hook runs `check`. Only Claude Code and OpenCode have **full** support; other tools run the skills on one model, without blind review.
 
 | File | Holds | Who writes it |
 |---|---|---|
@@ -158,7 +163,7 @@ Later files win. Re-running `install` offers `update` (re-ask, your answers as d
 
 - **Resume interrupted work?** Ask `lean-help` "what next". It finds in-progress specs. `lean-build` resumes from the spec's `status`.
 - **A requirement changed mid-build?** `lean-change course`. It proposes old → new edits across SPEC, ARCHITECTURE and stories, and applies them once you approve.
-- **A build keeps looping back?** After 3 review loopbacks it stops and asks you. Two `bad_spec` loops move the implementer up a tier.
+- **A build keeps looping back?** After 3 review loopbacks it stops and asks you. The first `bad_spec` (wrong approach) moves the implementer up a tier; an `amend` (the spec missed something) patches in place without a rebuild.
 - **Skip architecture?** Yes, for work with no independently built parts. Not for 2+ lanes.
 - **Unattended run?** `lean-build --auto`: it never waits. Questions turn into `blocked` stories with the question written down.
 - **Where are deferred findings?** In each epic's `deferred.md`, and `plan/deferred.md` for ad-hoc or cross-epic items. `lean-plan status` suggests which to promote into stories.

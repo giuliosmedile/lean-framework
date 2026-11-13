@@ -157,3 +157,26 @@ test('input folder: asked, created, stored, and must differ from output', () => 
   assert.ok(exists(def, 'docs'), 'default input folder is docs');
   assert.throws(() => execFileSync(process.execPath, [CLI, 'install', '--directory', tmp(), '--tools', 'claude-code', '--yes', '--no-scout', '--input-folder', 'plan'], { stdio: 'pipe' }), /must differ/);
 });
+
+test('install vendors the plan CLI and the guard hook; uninstall removes only what LEAN added', () => {
+  const root = tmp();
+  execFileSync('git', ['-C', root, 'init', '-q']);
+  fs.mkdirSync(path.join(root, '.claude'));
+  fs.writeFileSync(path.join(root, '.claude/settings.json'), JSON.stringify({ permissions: { allow: ['Bash(ls)'] } }));
+  cli('install', '--directory', root, '--tools', 'claude-code', '--yes', '--no-scout', '--git-hook');
+  for (const rel of ['_lean/bin/lean.js', '_lean/bin/lib/plan-check.js', '_lean/bin/commands/claim.js', '_lean/bin/node_modules/yaml/package.json', '_lean/hooks/frozen-guard.js', '.claude/agents/lean-test.md'])
+    assert.ok(exists(root, rel), rel);
+  const out = execFileSync(process.execPath, [path.join(root, '_lean/bin/lean.js'), 'check', '--directory', root], { encoding: 'utf8', cwd: os.tmpdir() });
+  assert.match(out, /PASS/);
+  const settings = JSON.parse(fs.readFileSync(path.join(root, '.claude/settings.json'), 'utf8'));
+  assert.deepEqual(settings.permissions.allow, ['Bash(ls)']);
+  assert.match(settings.hooks.PreToolUse[0].hooks[0].command, /_lean\/hooks\/frozen-guard\.js/);
+  assert.match(fs.readFileSync(path.join(root, '.git/hooks/pre-commit'), 'utf8'), /lean-method pre-commit/);
+  cli('install', '--directory', root, '--action', 'quick-update', '--yes', '--no-scout');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root, '.claude/settings.json'), 'utf8')).hooks.PreToolUse.length, 1, 're-install does not duplicate the hook');
+  assert.ok(exists(root, '.git/hooks/pre-commit'), 'quick-update keeps the git hook');
+  cli('uninstall', '--directory', root, '--yes');
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, '.claude/settings.json'), 'utf8')), { permissions: { allow: ['Bash(ls)'] } });
+  assert.ok(!exists(root, '.git/hooks/pre-commit'));
+  assert.ok(!exists(root, '_lean/bin'));
+});

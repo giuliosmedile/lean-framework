@@ -1,5 +1,7 @@
 # LEAN platform codes — copied from BMAD-METHOD v6.12.4 (MIT, (c) 2025 BMad Code, LLC).
-# Same schema. LEAN reads: name, preferred, suspended, installer.target_dir, installer.commands_target_dir.
+# Same schema. LEAN reads: name, preferred, suspended, support, installer.target_dir, installer.commands_target_dir.
+#   support: full = cheap worker tiers, blind parallel review and the fresh-context implementer all work.
+#            absent = basic: the skills install and run, but on one model, and review runs in the same context.
 # Each platform entry has:
 #   name: Display name shown to users
 #   preferred: Whether shown as a recommended option on install
@@ -59,6 +61,7 @@ platforms:
   claude-code:
     name: "Claude Code"
     preferred: true
+    support: full        # subagents with per-call model, role agents, guard hook
     installer:
       target_dir: .claude/skills
       global_target_dir: ~/.claude/skills
@@ -262,6 +265,7 @@ platforms:
   opencode:
     name: "OpenCode"
     preferred: false
+    support: full        # subagents with per-agent model, role agents (no guard hook yet)
     installer:
       target_dir: .agents/skills
       global_target_dir: ~/.agents/skills

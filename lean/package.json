@@ -1,6 +1,6 @@
 {
   "name": "lean-method",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "LEAN — a streamlined, orchestrator-first take on the BMAD method for AI-driven development",
   "keywords": ["ai", "agents", "skills", "orchestrator", "claude-code", "opencode", "bmad"],
   "license": "MIT",
@@ -10,7 +10,7 @@
     "lean": "tools/installer/lean-cli.js",
     "lean-method": "tools/installer/lean-cli.js"
   },
-  "files": ["tools/installer", "src", "skills", "README.md"],
+  "files": ["tools/installer", "src", "skills", "README.md", "COMPARISON.md"],
   "engines": { "node": ">=20.19" },
   "scripts": {
     "lean:install": "node tools/installer/lean-cli.js install",

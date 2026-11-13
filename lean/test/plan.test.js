@@ -36,7 +36,7 @@ epics:
   - { id: E1, title: Foundation, folder: epics/E1-foundation, caps: [CAP-1], depends_on: [], status: done }
   - { id: E2, title: Export, folder: epics/E2-export, caps: [CAP-2], depends_on: [E1], status: active }
 `);
-  write(root, 'plan/epics/E1-foundation/EPIC.md', '---\nid: E1\nstatus: done\n---\n');
+  write(root, 'plan/epics/E1-foundation/EPIC.md', '---\nid: E1\nstatus: done\n---\n## Exit evidence\n\n- e2e `scaffold.e2e` green at abc123\n');
   write(root, 'plan/epics/E1-foundation/stories.yaml', 'epic: E1\nstories:\n  - { id: E1-1, title: Scaffold, file: stories/E1-1-scaffold.md, depends_on: [] }\n');
   write(root, 'plan/epics/E1-foundation/stories/E1-1-scaffold.md', story('E1-1', { status: 'done' }));
 
@@ -242,4 +242,109 @@ test('trespass: a lane story editing another lane or the contracts is an error',
   write(root, 'src/contracts/rows.ts', '//frozen\n');
   const f = errors(checkStory(load(root), 'E2-1')).filter((x) => x.code === 'diff/trespass');
   assert.deepEqual(f.map((x) => x.where).sort(), ['src/b/consumer.js', 'src/contracts/rows.ts']);
+});
+
+// ── 0.6 ─────────────────────────────────────────────────────────────────
+const { check: guard } = require('../tools/installer/hooks/frozen-guard');
+const { claim, release, listClaims } = require('../tools/installer/lib/claims');
+const gitInit = (root) => {
+  execFileSync('git', ['-C', root, 'init', '-q']);
+  execFileSync('git', ['-C', root, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '--allow-empty', '-m', 'base']);
+};
+const hasGit = () => {
+  try {
+    execFileSync('git', ['--version'], { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+};
+const FROZEN = '<frozen-after-approval reason="x">\n\n## Intent\n\n**Problem:** p\n</frozen-after-approval>\n\n## Tasks\n\n- [ ] a\n';
+
+test('frozen tests: freeze --tests locks them; an edit fails check; unlock clears', () => {
+  const root = fixture();
+  const rel = 'plan/epics/E2-export/stories/E2-1-producer.md';
+  edit(root, rel, (t) => t.replace('status: todo', 'status: in-progress\nroute: full') + FROZEN);
+  write(root, 'test/producer.test.js', 'assert(1)\n');
+  assert.equal(run('freeze', '--directory', root, '--story', 'E2-1', '--tests', 'test/producer.test.js').code, 0);
+  assert.match(fs.readFileSync(path.join(root, rel), 'utf8'), /^frozen_tests: \['test\/producer\.test\.js#[0-9a-f]{64}'\]/m);
+  assert.deepEqual(errors(checkStory(load(root), 'E2-1')), []);
+  write(root, 'test/producer.test.js', 'assert(true) // weakened\n');
+  assert.ok(codes(checkStory(load(root), 'E2-1')).includes('story/frozen-test-changed'));
+  run('freeze', '--directory', root, '--story', 'E2-1', '--unlock-tests');
+  assert.doesNotMatch(fs.readFileSync(path.join(root, rel), 'utf8'), /frozen_tests/);
+  assert.ok(!codes(checkStory(load(root), 'E2-1')).includes('story/frozen-test-changed'));
+  run('freeze', '--directory', root, '--story', 'E2-1', '--unlock');
+  assert.doesNotMatch(fs.readFileSync(path.join(root, rel), 'utf8'), /frozen_sha256/);
+});
+
+test('guard hook: blocks edits to frozen intent and frozen tests, allows the rest', () => {
+  const root = fixture();
+  const rel = 'plan/epics/E2-export/stories/E2-1-producer.md';
+  edit(root, rel, (t) => t.replace('status: todo', 'status: in-progress\nroute: full') + FROZEN);
+  write(root, 'test/producer.test.js', 'assert(1)\n');
+  run('freeze', '--directory', root, '--story', 'E2-1', '--tests', 'test/producer.test.js');
+  const evt = (tool_name, tool_input) => ({ tool_name, tool_input, cwd: root });
+  const abs = path.join(root, rel);
+  assert.equal(guard(evt('Edit', { file_path: abs, old_string: '- [ ] a', new_string: '- [x] a' })), null, 'outside the block is fine');
+  assert.equal(guard(evt('Edit', { file_path: abs, old_string: 'status: in-progress', new_string: 'status: in-review' })), null, 'frontmatter status is fine');
+  assert.match(guard(evt('Edit', { file_path: abs, old_string: '**Problem:** p', new_string: '**Problem:** q' })), /frozen intent/);
+  assert.match(guard(evt('MultiEdit', { file_path: abs, edits: [{ old_string: '- [ ] a', new_string: '- [x] a' }, { old_string: '**Problem:** p', new_string: '**Problem:** q' }] })), /frozen intent/);
+  const cur = fs.readFileSync(abs, 'utf8');
+  assert.match(guard(evt('Write', { file_path: abs, content: cur.replace(/frozen_sha256: .*\n/, '') })), /frozen intent/, 'dropping the hash is blocked too');
+  assert.match(guard(evt('Write', { file_path: path.join(root, 'test/producer.test.js'), content: 'x' })), /frozen acceptance test/);
+  assert.equal(guard(evt('Write', { file_path: path.join(root, 'src/a/producer.js'), content: 'x' })), null);
+  edit(root, rel, (t) => t.replace('status: in-progress', 'status: done'));
+  assert.equal(guard(evt('Write', { file_path: path.join(root, 'test/producer.test.js'), content: 'x' })), null, 'unlocked once the story is done');
+});
+
+test('claims: atomic, exclusive, visible to next and check', (t) => {
+  if (!hasGit()) return t.skip('git not available');
+  const root = fixture();
+  gitInit(root);
+  edit(root, 'plan/epics/E2-export/stories/E2-0-contracts.md', (s) => s.replace('status: todo', 'status: done'));
+  assert.equal(claim(root, 'E2-1', 'agent-a').ok, true);
+  assert.equal(claim(root, 'E2-1', 'agent-a').already, true);
+  const taken = claim(root, 'E2-1', 'agent-b');
+  assert.equal(taken.ok, false);
+  assert.equal(taken.holder.owner, 'agent-a');
+  assert.equal(run('claim', '--directory', root, '--story', 'E2-1', '--owner', 'agent-b').code, 1);
+  const r = nextStories(load(root));
+  assert.deepEqual(r.next.map((s) => s.id), ['E2-2'], 'claimed story is skipped');
+  assert.deepEqual(r.claimed.map((s) => `${s.id}:${s.owner}`), ['E2-1:agent-a']);
+  claim(root, 'E2-0', 'agent-c');
+  assert.ok(codes(checkPlan(load(root))).includes('claims/stale'), 'claim on a done story');
+  assert.equal(release(root, 'E2-0'), true);
+  assert.deepEqual([...listClaims(root).keys()], ['E2-1']);
+});
+
+test('contracts lite, exit evidence, document size, archives, triage vocabulary', () => {
+  const root = fixture();
+  const E2 = 'plan/epics/E2-export';
+  // lite: no checkpoint column needed, decisions table ignored
+  edit(root, `${E2}/stories.yaml`, (t) => t.replace('epic: E2\n', 'epic: E2\ncontracts: lite\n').replace('owner: bob', 'owner: ann'));
+  edit(root, `${E2}/CONTRACTS.md`, (t) => t.replace('| E2-3 |\n', '|  |\n'));
+  edit(root, `${E2}/stories/E2-2-consumer.md`, (t) => t.replace('status: todo', 'status: in-progress'));
+  assert.deepEqual(checkPlan(load(root)), [], 'lite skips seam checkpoints and decisions due');
+  edit(root, `${E2}/stories.yaml`, (t) => t.replace('owner: ann, modules: [src/b]', 'owner: bob, modules: [src/b]'));
+  assert.ok(codes(checkPlan(load(root))).includes('lanes/lite-with-people'));
+  // exit evidence
+  write(root, 'plan/epics/E1-foundation/EPIC.md', '---\nid: E1\nstatus: done\n---\n## Exit evidence\n\n<!-- todo -->\n');
+  assert.ok(codes(checkPlan(load(root))).includes('epics/no-exit-evidence'));
+  // spec size + log rollover + archive
+  const words = (n) => Array(n).fill('w').join(' ');
+  edit(root, 'plan/SPEC.md', (t) => t.replace('status: final', 'status: final\nstakes: hobby') + `\n${words(400)}\n\n## Decision Log\n\n${Array(45).fill('- 2026-11-12 — decision — x').join('\n')}\n`);
+  let c = codes(checkPlan(load(root)));
+  assert.ok(c.includes('spec/size') && c.includes('doc/log-size'));
+  edit(root, 'plan/epics.yaml', (t) => t.replace('caps: [CAP-1], depends_on: []', 'caps: [CAP-1, CAP-9], depends_on: []'));
+  assert.ok(codes(checkPlan(load(root))).includes('caps/unknown'));
+  write(root, 'plan/SPEC.archive.md', '- **CAP-9 — old thing**\n  - retired: 2026-10-01 — dropped\n');
+  c = codes(checkPlan(load(root)));
+  assert.ok(!c.includes('caps/unknown') && !c.includes('caps/archived'), 'archived id known; its epic is done');
+  // triage vocabulary
+  edit(root, 'plan/epics/E1-foundation/stories/E1-1-scaffold.md', (t) =>
+    t.replace('status: done', 'status: done\nroute: full\nbaseline_commit: abc') + '\n## Review Triage Log\n\n| # | lens | verdict | route | evidence |\n|---|---|---|---|---|\n| 1 | adversarial | severe | fix-it | x |\n| 2 | edge-case | medium | amend | y |\n');
+  const vocab = checkPlan(load(root)).filter((f) => f.code === 'story/triage-vocab');
+  assert.equal(vocab.length, 2, 'bad verdict + bad route; amend is valid');
+  assert.equal(aggregate(load(root)).total.triage_routes.amend, 1);
 });

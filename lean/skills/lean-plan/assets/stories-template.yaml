@@ -4,6 +4,7 @@
 
 epic: E1
 lanes: []                       # only when the epic runs 2+ lanes — details in CONTRACTS.md
+contracts: full                 # full (2+ people) | lite (agents run by one person) — only with lanes
 #  - { id: A, owner: '', modules: [src/search/] }   # path prefixes from the repo root — `lean-method check --story` flags edits outside them
 
 stories:

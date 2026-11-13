@@ -90,6 +90,14 @@ function frozenBlock(text) {
 }
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
+/** Words outside the Decision Log, and the number of Decision Log entries. */
+function docSize(body) {
+  const clean = stripComments(body);
+  const log = section(clean, 'Decision Log') || '';
+  const words = (clean.replace(log, '').match(/\S+/g) || []).length;
+  return { words, logEntries: (log.match(/^\s*-\s+\S/gm) || []).length };
+}
+
 const idsIn = (text, re) => [...new Set([...(text || '').matchAll(re)].map((m) => m[1]))];
 
 /** Load the whole tree. Never throws on content problems; records them in `problems`. */
@@ -98,13 +106,18 @@ function loadPlan(project) {
   const plan = { ...project, exists: fs.existsSync(planDir), epics: [], stories: new Map(), problems: [], spec: null, arch: null };
   if (!plan.exists) return plan;
 
+  const CAP_RE = /^\s*-\s*\*\*((?:CAP|QR)-\d+)\b/gm;
+  const AD_RE = /^#{2,4}\s*(AD-\d+)\b/gm;
   const spec = read(path.join(planDir, 'SPEC.md'));
   if (spec != null) {
     const fm = frontmatter(spec);
-    plan.spec = { fm: fm.data, ids: idsIn(stripComments(fm.body), /^\s*-\s*\*\*((?:CAP|QR)-\d+)\b/gm) };
+    plan.spec = { fm: fm.data, ids: idsIn(stripComments(fm.body), CAP_RE), archived: idsIn(stripComments(read(path.join(planDir, 'SPEC.archive.md'))), CAP_RE), ...docSize(fm.body) };
   }
   const arch = read(path.join(planDir, 'ARCHITECTURE.md'));
-  if (arch != null) plan.arch = { fm: frontmatter(arch).data, ads: idsIn(stripComments(arch), /^#{2,4}\s*(AD-\d+)\b/gm) };
+  if (arch != null) {
+    const fm = frontmatter(arch);
+    plan.arch = { fm: fm.data, ads: [...idsIn(stripComments(arch), AD_RE), ...idsIn(stripComments(read(path.join(planDir, 'ARCHITECTURE.archive.md'))), AD_RE)], ...docSize(fm.body) };
+  }
 
   const idx = parseYaml(path.join(planDir, 'epics.yaml'));
   plan.index = idx;
@@ -116,7 +129,7 @@ function loadPlan(project) {
     const epicMd = read(path.join(epic.dir, 'EPIC.md'));
     if (epicMd != null) {
       const fm = frontmatter(epicMd);
-      epic.md = { fm: fm.data, error: fm.error, ads: idsIn(stripComments(fm.body), /^#{2,4}\s*(AD-\d+)\b/gm) };
+      epic.md = { fm: fm.data, error: fm.error, ads: idsIn(stripComments(fm.body), /^#{2,4}\s*(AD-\d+)\b/gm), exitEvidence: (stripComments(section(fm.body, 'Exit evidence') || '').match(/\S+/g) || []).length };
     }
     const contracts = read(path.join(epic.dir, 'CONTRACTS.md'));
     if (contracts != null) {

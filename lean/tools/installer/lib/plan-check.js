@@ -7,14 +7,20 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const { STORY_STATUS, EPIC_STATUS, IN_FLIGHT, section, stripComments, frozenBlock, sha256, statusOf } = require('./plan');
+const { triageRows, VERDICTS, ROUTES } = require('./metrics');
+const { listClaims } = require('./claims');
 
 const STORY_ID = /^E\d+-(?:\d+|C\d+)$/;
 const EPIC_ID = /^E\d+$/;
 const SPECIAL_LANES = ['', 'shared', 'integration'];
-const LOG_SECTIONS = ['Implementation Notes', 'Spec Change Log', 'Review Triage Log'];
+const LOG_SECTIONS = ['How to review', 'Implementation Notes', 'Spec Change Log', 'Review Triage Log'];
 // kiss.md §B — build-spec caps in tokens. Words → tokens at ~4/3 (English prose + markdown).
 const SPEC_CAP_TOKENS = { kiss: 1000, standard: 1600 };
 const TOKENS_PER_WORD = 4 / 3;
+// kiss.md §B — SPEC.md page caps by stakes (≈ 500 words a page); standard has no cap at launch.
+const SPEC_PAGES = { kiss: { hobby: 0.5, internal: 2, launch: 5 }, standard: { hobby: 1, internal: 4, launch: Infinity } };
+const WORDS_PER_PAGE = 500;
+const LOG_ROLLOVER = 40;
 
 const asList = (v) => (Array.isArray(v) ? v : v == null || v === '' ? [] : [v]);
 const idOf = (v) => (typeof v === 'string' ? (v.match(/^\s*([A-Z]+-\d+)/) || [])[1] : v && v.id);
@@ -37,6 +43,18 @@ function checkPlan(plan, { epic: only } = {}) {
   const out = [];
   const add = (level, code, where, msg) => out.push({ level, code, where, msg });
   if (!plan.exists) return [{ level: 'warn', code: 'plan/missing', where: rel(plan, plan.planDir), msg: 'no plan folder yet — nothing to check' }];
+
+  // ── document size: every skill reads these whole ─────────────
+  if (!only) {
+    if (plan.spec) {
+      const stakes = plan.spec.fm.stakes || 'internal';
+      const pages = (SPEC_PAGES[plan.style] || SPEC_PAGES.kiss)[stakes];
+      if (pages && plan.spec.words > pages * WORDS_PER_PAGE * 1.2)
+        add('warn', 'spec/size', 'SPEC.md', `≈${(plan.spec.words / WORDS_PER_PAGE).toFixed(1)} pages > ${pages} for ${stakes} (${plan.style}) — cut, or archive retired capabilities to SPEC.archive.md`);
+    }
+    for (const [name, doc] of [['SPEC.md', plan.spec], ['ARCHITECTURE.md', plan.arch]])
+      if (doc && doc.logEntries > LOG_ROLLOVER) add('warn', 'doc/log-size', name, `Decision Log has ${doc.logEntries} entries — roll all but the newest 10 into ${name.replace('.md', '.log.md')}`);
+  }
 
   // ── epics.yaml ──────────────────────────────────────────────
   const idx = plan.index;
@@ -65,7 +83,11 @@ function checkPlan(plan, { epic: only } = {}) {
       if (!eps.length && !uncovered.has(id)) add('error', 'caps/uncovered', 'epics.yaml', `${id} (SPEC.md) is in no epic and not under uncovered:`);
       if (eps.length > 1) add('warn', 'caps/dup', 'epics.yaml', `${id} is claimed by ${eps.join(', ')}`);
     }
-    for (const [c, eps] of where) if (!plan.spec.ids.includes(c)) add('warn', 'caps/unknown', `epics.yaml#${eps[0]}`, `${c} is not defined in SPEC.md`);
+    for (const [c, eps] of where) {
+      if (plan.spec.archived.includes(c)) {
+        if (plan.epics.some((e) => eps.includes(e.id) && e.status !== 'done')) add('warn', 'caps/archived', `epics.yaml#${eps[0]}`, `${c} is archived (SPEC.archive.md) but an open epic still claims it`);
+      } else if (!plan.spec.ids.includes(c)) add('warn', 'caps/unknown', `epics.yaml#${eps[0]}`, `${c} is not defined in SPEC.md`);
+    }
   }
 
   const adsKnown = new Set([...(plan.arch?.ads || []), ...plan.epics.flatMap((e) => e.md?.ads || [])]);
@@ -85,6 +107,7 @@ function checkPlan(plan, { epic: only } = {}) {
     const ew = rel(plan, e.dir);
     if (!e.md) add('error', 'epics/epic-md', ew, 'EPIC.md is missing');
     else if (e.md.fm.status && e.md.fm.status !== e.status) add('warn', 'epics/status-mismatch', `${ew}/EPIC.md`, `status ${e.md.fm.status} ≠ epics.yaml ${e.status}`);
+    if (e.md && e.status === 'done' && !e.md.exitEvidence) add('warn', 'epics/no-exit-evidence', `${ew}/EPIC.md`, 'done without ## Exit evidence (the e2e test + commit, or the demo the user watched)');
 
     const sy = e.storiesYaml;
     if (sy.missing) {
@@ -101,6 +124,11 @@ function checkPlan(plan, { epic: only } = {}) {
   }
 
   checkCycles(plan, add, only);
+  for (const [id, c] of listClaims(plan.root)) {
+    const s = plan.stories.get(id);
+    if (!s) add('warn', 'claims/unknown', id, `claim by ${c.owner} on a story that doesn't exist — lean-method claim --story ${id} --release`);
+    else if (['done', 'retired'].includes(statusOf(s)) && (!only || s.epic === only)) add('warn', 'claims/stale', id, `${statusOf(s)} but still claimed by ${c.owner} — lean-method claim --story ${id} --release`);
+  }
   return out;
 }
 
@@ -195,7 +223,24 @@ function checkStoryFile(plan, e, s, add, adsKnown) {
   } else if (block != null && ['ready', 'in-progress', 'in-review', 'done'].includes(st)) {
     add('warn', 'story/frozen-unhashed', where, `status ${st} but the frozen block was never hashed — run: lean-method freeze --story ${s.id}`);
   }
+  // frozen acceptance tests: locked while the story is being built
+  if (!['done', 'retired'].includes(st))
+    for (const entry of asList(fm.frozen_tests)) {
+      const [file, hash] = String(entry).split('#');
+      const abs = path.join(plan.root, file);
+      if (!fs.existsSync(abs)) add('error', 'story/frozen-test-missing', where, `frozen test ${file} was deleted`);
+      else if (sha256(fs.readFileSync(abs)) !== hash) add('error', 'story/frozen-test-changed', where, `frozen test ${file} was edited — the implementer makes tests pass, never changes them`);
+    }
   if (st === 'done' && fm.route && !fm.baseline_commit) add('warn', 'story/no-baseline', where, 'done without baseline_commit');
+
+  // review log: metrics counts these rows, so their vocabulary must be exact
+  if (fm.route === 'full' || fm.route === 'small') {
+    if (['in-review', 'done'].includes(st) && section(s.body, 'Review Triage Log') == null) add('warn', 'story/no-triage-log', where, `${st} but no "## Review Triage Log" — review not recorded`);
+    triageRows(s).forEach((r, i) => {
+      if (!VERDICTS.includes(r.verdict)) add('warn', 'story/triage-vocab', where, `triage row ${i + 1}: verdict "${r.verdict}" is not one of ${VERDICTS.join(' | ')}`);
+      if (!ROUTES.includes(r.route)) add('warn', 'story/triage-vocab', where, `triage row ${i + 1}: route "${r.route}" is not one of ${ROUTES.join(' | ')}`);
+    });
+  }
 }
 
 function checkLanes(plan, e, add) {
@@ -223,6 +268,9 @@ function checkLanes(plan, e, add) {
       owner.set(m, l.id);
     }
 
+  const level = e.storiesYaml.data.contracts || 'full';
+  if (!['full', 'lite'].includes(level)) add('error', 'lanes/contracts-level', `${ew}/stories.yaml`, `contracts: "${level}" is not full | lite`);
+  if (level === 'lite' && new Set(e.lanes.map((l) => l.owner).filter(Boolean)).size > 1) add('warn', 'lanes/lite-with-people', `${ew}/stories.yaml`, 'contracts: lite but lanes have different owners — lite is for agents run by one person');
   if (!e.contracts) return;
   const cw = `${ew}/CONTRACTS.md`;
   const col = (row, prefix) => Object.keys(row).find((k) => k.startsWith(prefix));
@@ -231,10 +279,10 @@ function checkLanes(plan, e, add) {
     const impl = row[col(row, 'real impl')] || '';
     const cp = row[col(row, 'checkpoint')] || '';
     if (!impl) add('error', 'seams/orphan', `${cw}#${name}`, 'seam has no real-implementation owner');
-    if (!cp) add('error', 'seams/no-checkpoint', `${cw}#${name}`, 'seam has no checkpoint story');
+    if (!cp && level === 'full') add('error', 'seams/no-checkpoint', `${cw}#${name}`, 'seam has no checkpoint story');
     for (const id of storyIds(impl + ' ' + cp)) if (!plan.stories.has(id)) add('warn', 'seams/unknown-story', `${cw}#${name}`, `${id} is not in any stories.yaml`);
   }
-  for (const row of e.contracts.decisions) {
+  for (const row of level === 'full' ? e.contracts.decisions : []) {
     const byKey = col(row, 'decide by');
     const done = /^(done|decided|closed)$/i.test(row.status || '');
     for (const id of storyIds(byKey ? row[byKey] : '')) {
@@ -317,6 +365,8 @@ function checkStory(plan, id) {
 
 /** Deterministic "what next": in-flight stories, then the next ready todo per (epic, lane). */
 function nextStories(plan, { lane } = {}) {
+  const claims = listClaims(plan.root);
+  const claimed = [];
   const inFlight = [];
   const next = [];
   const blocked = [];
@@ -330,6 +380,10 @@ function nextStories(plan, { lane } = {}) {
       const st = statusOf(s);
       if (IN_FLIGHT.includes(st)) inFlight.push({ id: s.id, epic: e.id, lane: sl, status: st, file: s.file });
       if (st === 'blocked') blocked.push({ id: s.id, epic: e.id, lane: sl, reason: s.fm.blocked_reason || '' });
+      if (st === 'todo' && claims.has(s.id)) {
+        claimed.push({ id: s.id, epic: e.id, lane: sl, owner: claims.get(s.id).owner });
+        continue;
+      }
       if (st !== 'todo' || picked.has(sl)) continue;
       if (e0 && s !== e0 && !e0Done) continue; // no lane starts before <E>-0
       const waiting = asList(s.entry.depends_on).filter((d) => !['done', 'retired'].includes(statusOf(plan.stories.get(d))));
@@ -338,7 +392,7 @@ function nextStories(plan, { lane } = {}) {
       next.push({ id: s.id, epic: e.id, lane: sl, title: s.entry.title || s.fm.title || '', file: s.file });
     }
   }
-  return { inFlight, next, blocked };
+  return { inFlight, next, blocked, claimed };
 }
 
 module.exports = { checkPlan, checkStory, checkTrespass, nextStories, specTokens, SPEC_CAP_TOKENS };
