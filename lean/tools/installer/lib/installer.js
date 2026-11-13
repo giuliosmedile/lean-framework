@@ -5,7 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 const YAML = require('yaml');
-const { PKG_ROOT, leanPaths, buildConfigs, writeConfigs, loadModule } = require('./config');
+const { PKG_ROOT, leanPaths, buildConfigs, writeConfigs, loadModule, readCustom, deepMerge } = require('./config');
 const { renderRoleAgents } = require('./role-agents');
 
 const VERSION = require(path.join(PKG_ROOT, 'package.json')).version;
@@ -163,7 +163,8 @@ function install({ projectRoot, tools, answers, orchestration, guardHook = true,
   const lp = leanPaths(projectRoot);
   const previous = readManifest(projectRoot);
   const prevFiles = readFilesManifest(lp.filesManifest);
-  const { files, skills, targetDirs } = planFiles({ tools, orchestration });
+  const effective = deepMerge(orchestration, readCustom(projectRoot).orchestration || {});
+  const { files, skills, targetDirs } = planFiles({ tools, orchestration: effective });
 
   // 1. Back up files the user edited, so the update never silently discards their work.
   const edited = modifiedFiles(projectRoot);

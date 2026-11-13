@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const pc = require('picocolors');
 const { scout } = require('../lib/scout');
 const { install, loadPlatforms, formatPlatformList, readManifest, VERSION } = require('../lib/installer');
-const { loadModule, readPrevious, defaultFor, applySets, ROLES } = require('../lib/config');
+const { loadModule, readPrevious, readCustom, deepMerge, defaultFor, applySets, ROLES } = require('../lib/config');
 const { resolveModel } = require('../lib/role-agents');
 const ui = require('../lib/ui');
 
@@ -122,14 +122,14 @@ module.exports = {
     }
     const basic = tools.filter((t) => platforms[t] && platforms[t].support !== 'full');
     if (basic.length) {
-      const msg = `Basic support for ${basic.map((t) => platforms[t].name).join(', ')}: the skills run, but on one model and with review in the same context — no cheap worker tiers, no blind reviewers. Full support: Claude Code, OpenCode.`;
+      const msg = `Basic support for ${basic.map((t) => platforms[t].name).join(', ')}: the skills run, but on one model and with review in the same context — no cheap worker tiers, no blind reviewers. Full support: Claude Code, OpenCode, Antigravity CLI.`;
       interactive ? ui.info(msg) : process.stderr.write(msg + '\n');
     }
 
     // ── Install ──────────────────────────────────────────────────────
     const run = () => install({ projectRoot, tools, answers, orchestration, guardHook, gitHook });
     const res = interactive ? await ui.spin('Installing…', run) : run();
-    const summary = ui.summary(res, { projectRoot, tools, orchestration, platforms });
+    const summary = ui.summary(res, { projectRoot, tools, orchestration: deepMerge(orchestration, readCustom(projectRoot).orchestration || {}), platforms });
     if (interactive) {
       ui.note(summary, 'Installed');
       await ui.outro('LEAN is ready. Start with the lean-intent skill, or run lean-kit to review the tiers.');
@@ -182,4 +182,3 @@ function listOptions() {
     `${'orchestration.escalate'.padEnd(34)} Re-run a failed worker one tier up (true|false)`,
   ].join('\n');
 }
-

@@ -92,7 +92,7 @@ Anything a script can decide, the script decides. Skills run these instead of wo
 
 ## When invoked directly
 
-1. Resolve the configuration as above. Note which role agents exist (`.claude/agents/lean-*.md`, `.opencode/agents/lean-*.md`) and their `model:`.
+1. Resolve the configuration as above. Note which role agents exist (`.claude/agents/lean-*.md`, `.opencode/agents/lean-*.md`, `.agents/agents/lean-*/agent.md` for AGY) and their `model:`. AGY uses `orchestration.tiers.antigravity-cli` presets rather than full model IDs; the actual model is selected by Antigravity.
 2. Show one table: role · tier · model · source (`_lean/config…` file, custom override, role agent, detected, or inherit — and why). Flag a role agent whose model disagrees with the config (it's stale).
 3. Ask, using the kiss question shape, what to change.
 4. Apply changes:

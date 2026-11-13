@@ -14,14 +14,16 @@ Every lean skill runs as an **orchestrator**: the session model holds the intent
    | Haiku | inherit | inherit | inherit |
    | anything else / unknown | inherit | inherit | inherit |
 
-3. **Harness check** — if the subagent tool can't take a per-call model (or has no subagents at all), every tier is `inherit`. Say so once in the run's first message.
+3. **Harness check** — if the tool has no way to choose a subagent model (or has no subagents at all), every tier is `inherit`. Say so once in the run's first message. AGY supports native presets, not arbitrary model IDs: use `orchestration.tiers.antigravity-cli` with `inherit`, `flash_lite`, `flash`, or `pro`; the underlying models are chosen by Antigravity and may change. If a configured value is invalid, stop and ask; never substitute silently.
 
-`inherit` = omit the model parameter. In Claude Code the values are the Agent tool's `model` aliases (`opus`, `sonnet`, `haiku`, …) or full model ids. In OpenCode they are `provider/model` strings.
+`inherit` = use the parent model. In Claude Code the values are the Agent tool's `model` aliases (`opus`, `sonnet`, `haiku`, …) or full model ids. In OpenCode they are `provider/model` strings. In AGY use its native preset names.
 
 **How to spawn a worker** (first that applies):
-1. **Role agent** — if the harness has an agent named `lean-<role>` (the installer writes them into `.claude/agents/` or `.opencode/agents/`, carrying the role's model), spawn that agent. In Claude Code, also pass the role's model from config as the per-call model, so overrides in `_lean/custom/` win even if the agent file is stale.
+1. **Role agent** — if the harness has an agent named `lean-<role>` (the installer writes them into `.claude/agents/`, `.opencode/agents/`, or `.agents/agents/lean-<role>/agent.md` for AGY), spawn that agent. In Claude Code, also pass the role's model from config as the per-call model. In AGY call `invoke_subagent` with `TypeName: lean-<role>` and the resolved preset in `Model`; this also makes custom overrides and escalation win over stale agent files. Wait for its message. Launch independent workers before waiting for any of them.
 2. **Generic subagent + model** — no role agent, but the harness takes a per-call model: spawn a general-purpose subagent with the role's model.
 3. **Inherit** — neither: spawn a plain subagent on the session model.
+
+For AGY, `top` is the current session model: start the parent session with the desired `agy --model <model-id>`. A worker at `top` uses `inherit`; an explicit `pro` worker preset is not necessarily the session model. Report preset names as presets, not as verified model IDs.
 
 ## 2. Roles → default tier
 

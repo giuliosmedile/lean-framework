@@ -4,6 +4,7 @@
 // and the tool itself runs it on the cheaper model.
 //   Claude Code: .claude/agents/lean-<role>.md   (model: alias | full id | inherit)
 //   OpenCode:    .opencode/agents/lean-<role>.md (mode: subagent, model: provider/model)
+//   AGY:         .agents/agents/lean-<role>/agent.md (model: native preset)
 
 const ROLE_TEXT = {
   scout: {
@@ -62,7 +63,18 @@ function opencodeAgent(role, model) {
   return lines.join('\n');
 }
 
-const FORMATS = { 'claude-code': { dir: '.claude/agents', render: claudeAgent }, opencode: { dir: '.opencode/agents', render: opencodeAgent } };
+function agyAgent(role, model) {
+  if (!['inherit', 'flash_lite', 'flash', 'pro'].includes(model))
+    throw new Error(`Antigravity CLI subagents require a native preset (inherit, flash_lite, flash, pro), not "${model}".`);
+  const r = ROLE_TEXT[role];
+  return ['---', `name: lean-${role}`, `description: ${JSON.stringify(r.description)}`, 'subagent: true', 'mainAgent: false', `model: ${model}`, '---', '', '# System Prompt', '', COMMON, '', r.body, ''].join('\n');
+}
+
+const FORMATS = {
+  'claude-code': { dir: '.claude/agents', render: claudeAgent },
+  opencode: { dir: '.opencode/agents', render: opencodeAgent },
+  'antigravity-cli': { dir: '.agents/agents', render: agyAgent, nested: true },
+};
 
 /** Returns [{ relPath, content, role, model }] for one harness. */
 function renderRoleAgents(harness, roles, tiers) {
@@ -70,7 +82,7 @@ function renderRoleAgents(harness, roles, tiers) {
   if (!fmt) return [];
   return Object.entries(roles).map(([role, tier]) => {
     const model = resolveModel(tier, tiers);
-    return { relPath: `${fmt.dir}/lean-${role}.md`, content: fmt.render(role, model), role, model };
+    return { relPath: `${fmt.dir}/lean-${role}${fmt.nested ? '/agent.md' : '.md'}`, content: fmt.render(role, model), role, model };
   });
 }
 

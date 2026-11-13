@@ -90,6 +90,12 @@ function readPrevious(projectRoot) {
   return deepMerge(readToml(p.team), readToml(p.user));
 }
 
+/** Overrides only: apply to generated agents without copying them into installer-managed answers. */
+function readCustom(projectRoot) {
+  const p = leanPaths(projectRoot);
+  return deepMerge(readToml(p.customTeam), readToml(p.customUser));
+}
+
 function defaultFor(q, projectRoot, previous) {
   const prev = previous?.[q.section]?.[q.key];
   if (prev !== undefined) return q.result ? stripResult(q.result, String(prev)) : String(prev);
@@ -158,4 +164,4 @@ function applySets(sets, answers, orchestration, mod = loadModule()) {
   }
 }
 
-module.exports = { loadModule, leanPaths, readMerged, readPrevious, defaultFor, buildConfigs, writeConfigs, applySets, deepMerge, ROLES, PKG_ROOT };
+module.exports = { loadModule, leanPaths, readMerged, readPrevious, readCustom, defaultFor, buildConfigs, writeConfigs, applySets, deepMerge, ROLES, PKG_ROOT };

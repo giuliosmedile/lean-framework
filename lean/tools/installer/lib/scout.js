@@ -116,6 +116,18 @@ const HARNESSES = {
     },
     warnings: () => [],
   },
+  'antigravity-cli': {
+    name: 'Antigravity CLI (AGY)',
+    bin: 'agy',
+    configDir: '~/.gemini/antigravity-cli',
+    perAgentModel: true,
+    agentsDir: '.agents/agents',
+    modelFormat: 'subagent preset: inherit, flash_lite, flash, or pro',
+    current: () => null,
+    models: () => ['inherit', 'flash_lite', 'flash', 'pro'],
+    presetModels: true,
+    warnings: () => ['AGY subagents use presets; the underlying model is chosen by Antigravity and may change.'],
+  },
   codex: {
     name: 'Codex',
     bin: 'codex',
@@ -167,6 +179,7 @@ function sibling(current, tier) {
 
 function suggestTiers(code, current, models) {
   const fam = classify(current).family;
+  if (code === 'antigravity-cli') return { top: 'inherit', mid: 'pro', low: 'flash', why: 'native AGY presets; the underlying model is selected by Antigravity' };
   if (code === 'claude-code') {
     if (fam === 'opus' || !current) return { top: 'inherit', mid: 'sonnet', low: 'haiku', why: current ? 'session on Opus' : 'Claude Code default session (Opus or Sonnet): Sonnet + Haiku workers' };
     if (fam === 'sonnet') return { top: 'inherit', mid: 'inherit', low: 'haiku', why: 'session on Sonnet: only scouts move down' };
@@ -207,7 +220,7 @@ function scout(projectDir = process.cwd(), { listModels = true } = {}) {
     const found = Boolean(binPath || configFound);
     const version = binPath ? (run(binPath, ['--version']) || '').split('\n')[0] : null;
     const current = found ? h.current(projectDir) : null;
-    const models = found && listModels ? h.models(binPath) : code === 'claude-code' ? h.models() : [];
+    const models = found && (listModels || h.presetModels) ? h.models(binPath) : code === 'claude-code' ? h.models() : [];
     results.push({
       code,
       name: h.name,

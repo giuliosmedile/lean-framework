@@ -30,17 +30,17 @@ The same commands are on the package (`npx lean-method check …`).
 - **Guard (Claude Code, on by default):** a PreToolUse hook, merged into `.claude/settings.json` next to your own settings, that refuses any Edit/Write changing a story's frozen intent, or a frozen acceptance test while its story is being built. Prose asks the model to behave; the hook makes it. (Shell edits aren't intercepted; `check --story` still catches them.)
 - **Git pre-commit (off by default, `--git-hook`):** runs `check` and blocks a commit that leaves the plan inconsistent. Never overwrites an existing pre-commit hook.
 
-**Support levels.** `full`: Claude Code and OpenCode, where cheap worker tiers, blind parallel review and the fresh-context implementer all work. Every other target (`--list-tools` shows the level) is `basic`: the skills install and run, but on one model and with review in the same context, which removes most of what makes LEAN cheaper and safer. The installer says so when you pick one.
+**Support levels.** `full`: Claude Code, OpenCode and Antigravity CLI (AGY), where worker tiers, blind parallel review and the fresh-context implementer work. AGY workers accept only `inherit`, `flash_lite`, `flash` and `pro` presets; Antigravity chooses the underlying models, which can change. Every other target (`--list-tools` shows the level) is `basic`: the skills install and run, but on one model and with review in the same context. The installer says so when you pick one.
 
 What `install` does:
 
-1. **Scouts** the machine for coding agents (Claude Code, OpenCode, Codex, Gemini CLI, Cursor). For each one it finds the session model, whether it can give a subagent its own model, and the models it can reach. It then suggests mid/low worker tiers; sibling models guessed from the session id are flagged "verify".
-2. Asks which **tools** to install for (same 50 targets as BMAD, detected ones pre-selected; only Claude Code and OpenCode have full support, see below), then the **questions** in `src/module.yaml`: name, project, languages, input folder (`docs`), plans folder (`plan`), style.
+1. **Scouts** the machine for coding agents (Claude Code, OpenCode, AGY, Codex, Gemini CLI, Cursor). For each one it finds the session model where available, whether it can give a subagent its own model, and the available models or presets. It then suggests mid/low worker tiers; sibling models guessed from the session id are flagged "verify".
+2. Asks which **tools** to install for (same 50 targets as BMAD, detected ones pre-selected), then the **questions** in `src/module.yaml`: name, project, languages, input folder (`docs`), plans folder (`plan`), style.
 3. **Helps you choose tiers** per tool: shows role → tier, the suggestion and why, and lets you pick models (or type one). Also asks whether reviewers should run on the session model.
 4. **Installs**:
    - the skills into each tool's skills folder;
    - OpenCode command pointers;
-   - **role agents** (`lean-scout`, `lean-implement`, `lean-test`, `lean-review`, `lean-check`, `lean-research`) in `.claude/agents/` and `.opencode/agents/`, each carrying its model, so the tool itself runs workers on the cheaper model;
+   - **role agents** (`lean-scout`, `lean-implement`, `lean-test`, `lean-review`, `lean-check`, `lean-research`) in `.claude/agents/`, `.opencode/agents/`, or `.agents/agents/` for AGY, each carrying its model or preset;
    - the plan CLI in `_lean/bin/` and the guard hook in `_lean/hooks/`;
    - the `_lean/` config and the manifests.
 

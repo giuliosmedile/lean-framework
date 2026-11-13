@@ -6,7 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
 const TOML = require('smol-toml');
-const { classify, suggestTiers } = require('../tools/installer/lib/scout');
+const { classify, suggestTiers, HARNESSES } = require('../tools/installer/lib/scout');
 const { renderRoleAgents, resolveModel } = require('../tools/installer/lib/role-agents');
 const { readMerged } = require('../tools/installer/lib/config');
 
@@ -44,6 +44,40 @@ test('role agents carry the role model in each tool format', () => {
   assert.match(oc.find((a) => a.role === 'implement').content, /mode: subagent\nmodel: anthropic\/claude-sonnet-5-5/);
   assert.doesNotMatch(oc.find((a) => a.role === 'scout').content, /model:/); // inherit → omitted
   assert.equal(resolveModel('some/model', {}), 'some/model');
+});
+
+test('Antigravity CLI uses native worker presets and detects agy', () => {
+  const h = HARNESSES['antigravity-cli'];
+  assert.equal(h.bin, 'agy');
+  assert.equal(h.perAgentModel, true);
+  assert.deepEqual(pickTiers(suggestTiers('antigravity-cli', null, [])), ['pro', 'flash']);
+  const agents = renderRoleAgents('antigravity-cli', { scout: 'low', review: 'mid' }, { low: 'flash', mid: 'pro' });
+  assert.equal(agents[0].relPath, '.agents/agents/lean-scout/agent.md');
+  assert.match(agents[0].content, /name: lean-scout[\s\S]*subagent: true[\s\S]*model: flash/);
+  assert.match(agents[1].content, /model: pro/);
+  assert.throws(() => renderRoleAgents('antigravity-cli', { scout: 'low' }, { low: 'gemini-3.8-flash-medium' }), /preset|flash/i);
+});
+
+test('quick-update generates agy workers from effective custom overrides without changing base answers', () => {
+  const root = tmp();
+  cli('install', '--directory', root, '--tools', 'antigravity-cli', '--yes', '--no-scout', '--set', 'orchestration.tiers.antigravity-cli.mid=inherit');
+  fs.appendFileSync(path.join(root, '_lean/custom/config.user.toml'), '\n[orchestration.tiers.antigravity-cli]\nmid = "pro"\nlow = "flash"\n');
+  cli('install', '--directory', root, '--action', 'quick-update', '--yes');
+  assert.match(fs.readFileSync(path.join(root, '.agents/agents/lean-review/agent.md'), 'utf8'), /model: pro/);
+  assert.match(fs.readFileSync(path.join(root, '.agents/agents/lean-scout/agent.md'), 'utf8'), /model: flash/);
+  const user = TOML.parse(fs.readFileSync(path.join(root, '_lean/config.user.toml'), 'utf8'));
+  assert.equal(user.orchestration.tiers['antigravity-cli'].mid, 'inherit');
+  assert.match(cli('status', '--directory', root), /antigravity-cli:.*scout=flash.*review=pro/);
+});
+
+test('invalid agy preset fails without overwriting an existing install', () => {
+  const root = tmp();
+  cli('install', '--directory', root, '--tools', 'antigravity-cli', '--yes', '--no-scout', '--set', 'orchestration.tiers.antigravity-cli.low=flash');
+  const agent = path.join(root, '.agents/agents/lean-scout/agent.md');
+  const before = fs.readFileSync(agent, 'utf8');
+  fs.appendFileSync(path.join(root, '_lean/custom/config.user.toml'), '\n[orchestration.tiers.antigravity-cli]\nlow = "gemini-3.8-flash-medium"\n');
+  assert.throws(() => execFileSync(process.execPath, [CLI, 'install', '--directory', root, '--action', 'quick-update', '--yes'], { stdio: 'pipe' }), /preset|flash/i);
+  assert.equal(fs.readFileSync(agent, 'utf8'), before);
 });
 
 test('fresh --yes install writes skills, pointers, role agents, config, manifests', () => {

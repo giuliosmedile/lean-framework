@@ -40,6 +40,7 @@ platforms:
   antigravity-cli:
     name: "Antigravity CLI (AGY)"
     preferred: false
+    support: full
     installer:
       target_dir: .agents/skills
       global_target_dir: ~/.gemini/antigravity-cli/skills

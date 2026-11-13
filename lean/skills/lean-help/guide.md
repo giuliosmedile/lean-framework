@@ -148,7 +148,7 @@ node _lean/bin/lean.js claim --story E2-3 --owner me       # atomic lock so two 
 node _lean/bin/lean.js metrics [--epic E2] [--json]        # loops, escalations, findings by verdict/lens/model, tokens, time
 ```
 
-Hooks: on Claude Code a guard hook refuses edits to frozen intent and frozen tests; optionally a git pre-commit hook runs `check`. Only Claude Code and OpenCode have **full** support; other tools run the skills on one model, without blind review.
+Hooks: on Claude Code a guard hook refuses edits to frozen intent and frozen tests; optionally a git pre-commit hook runs `check`. Claude Code, OpenCode and Antigravity CLI (AGY) have **full** support (AGY workers use the presets `flash_lite`, `flash`, `pro`, and has no guard hook yet: `check --story` still catches edits to frozen intent and tests); other tools run the skills on one model, without blind review.
 
 | File | Holds | Who writes it |
 |---|---|---|
