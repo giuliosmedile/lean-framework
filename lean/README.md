@@ -27,10 +27,10 @@ node _lean/bin/lean.js metrics [--epic E2] --json # loops, escalations, findings
 The same commands are on the package (`npx lean-method check …`).
 
 **Hooks** (asked at install, removed by uninstall):
-- **Guard (Claude Code, on by default):** a PreToolUse hook, merged into `.claude/settings.json` next to your own settings, that refuses any Edit/Write changing a story's frozen intent, or a frozen acceptance test while its story is being built. Prose asks the model to behave; the hook makes it. (Shell edits aren't intercepted; `check --story` still catches them.)
+- **Guard (Claude Code and Codex, on by default):** a PreToolUse hook that refuses any edit changing a story's frozen intent, or a frozen acceptance test while its story is being built. Claude Code: merged into `.claude/settings.json` next to your own settings, on Edit/MultiEdit/Write. Codex: merged into `.codex/hooks.json`, on `apply_patch` (the guard applies the patch in memory and checks the result); Codex runs project hooks only after you trust them once with `/hooks`. Prose asks the model to behave; the hook makes it. (Shell edits aren't intercepted; `check --story` still catches them.)
 - **Git pre-commit (off by default, `--git-hook`):** runs `check` and blocks a commit that leaves the plan inconsistent. Never overwrites an existing pre-commit hook.
 
-**Support levels.** `full`: Claude Code, OpenCode and Antigravity CLI (AGY), where worker tiers, blind parallel review and the fresh-context implementer work. AGY workers accept only `inherit`, `flash_lite`, `flash` and `pro` presets; Antigravity chooses the underlying models, which can change. Every other target (`--list-tools` shows the level) is `basic`: the skills install and run, but on one model and with review in the same context. The installer says so when you pick one.
+**Support levels.** `full`: Claude Code, Codex, OpenCode and Antigravity CLI (AGY), where worker tiers, blind parallel review and the fresh-context implementer work. Codex workers take a model id plus an optional reasoning effort (`gpt-6-luna#high`); its custom agents inherit the session's sandbox, so read-only roles are read-only by instruction. AGY workers accept only `inherit`, `flash_lite`, `flash` and `pro` presets; Antigravity chooses the underlying models, which can change. Every other target (`--list-tools` shows the level) is `basic`: the skills install and run, but on one model and with review in the same context. The installer says so when you pick one.
 
 What `install` does:
 
@@ -40,7 +40,7 @@ What `install` does:
 4. **Installs**:
    - the skills into each tool's skills folder;
    - OpenCode command pointers;
-   - **role agents** (`lean-scout`, `lean-implement`, `lean-test`, `lean-review`, `lean-check`, `lean-research`) in `.claude/agents/`, `.opencode/agents/`, or `.agents/agents/` for AGY, each carrying its model or preset;
+   - **role agents** (`lean-scout`, `lean-implement`, `lean-test`, `lean-review`, `lean-check`, `lean-research`) in `.claude/agents/`, `.opencode/agents/`, `.agents/agents/` for AGY, or `.codex/agents/*.toml` for Codex (named `lean_<role>` there), each carrying its model or preset;
    - the plan CLI in `_lean/bin/` and the guard hook in `_lean/hooks/`;
    - the `_lean/` config and the manifests.
 
@@ -55,7 +55,7 @@ _lean/
   _config/               manifest.yaml · skill-manifest.csv · files-manifest.csv (sha256 per installed file)
   _backups/<timestamp>/  installed files you had edited, saved before an update overwrote them
   bin/                   the plan CLI (lean.js) + its vendored dependencies — commit it with the skills
-  hooks/                 frozen-guard.js (Claude Code PreToolUse hook)
+  hooks/                 frozen-guard.js (PreToolUse hook for Claude Code and Codex)
 ```
 
 Not on the npm registry yet. From a local checkout: `npm pack` in `lean/`, then `npx --package=./lean-method-0.4.0.tgz lean-method install`.

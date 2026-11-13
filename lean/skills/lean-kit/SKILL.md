@@ -81,7 +81,7 @@ Anything a script can decide, the script decides. Skills run these instead of wo
 
 **How to call it:** wherever a skill says `lean-method <cmd>`, run `node {project-root}/_lean/bin/lean.js <cmd>`. The installer puts it there with its dependencies, so it needs nothing but Node. Without an install, use `lean-method <cmd>` (global) or `npx --no-install lean-method <cmd>` (devDependency). Add `--directory {project-root}` when not running from the root. If none runs, do the same check by reading, as the skill describes, and say once that the CLI is missing (`npx lean-method install` fixes it).
 
-**Guard hook (Claude Code):** the installer can add a PreToolUse hook that refuses any Edit/Write that would change frozen intent or a frozen acceptance test of a story in progress. When it blocks you, its message says why; don't work around it with shell edits. Renegotiate (intent) or judge the test (tests), unlock, edit, freeze again.
+**Guard hook (Claude Code, Codex):** the installer can add a PreToolUse hook that refuses any edit (Edit/Write, or Codex's `apply_patch`) that would change frozen intent or a frozen acceptance test of a story in progress. When it blocks you, its message says why; don't work around it with shell edits. Renegotiate (intent) or judge the test (tests), unlock, edit, freeze again.
 
 **Reading the result:** `✖` errors must be fixed (or put to the user) before the step that needed the check; `▲` warnings are reported, not blocking. Never edit a file just to silence a finding you haven't understood. Use `--json` when you need to act on the findings one by one.
 
@@ -92,7 +92,7 @@ Anything a script can decide, the script decides. Skills run these instead of wo
 
 ## When invoked directly
 
-1. Resolve the configuration as above. Note which role agents exist (`.claude/agents/lean-*.md`, `.opencode/agents/lean-*.md`, `.agents/agents/lean-*/agent.md` for AGY) and their `model:`. AGY uses `orchestration.tiers.antigravity-cli` presets rather than full model IDs; the actual model is selected by Antigravity.
+1. Resolve the configuration as above. Note which role agents exist (`.claude/agents/lean-*.md`, `.opencode/agents/lean-*.md`, `.agents/agents/lean-*/agent.md` for AGY, `.codex/agents/lean-*.toml` for Codex) and their `model:` (Codex: `model` + `model_reasoning_effort`). AGY uses `orchestration.tiers.antigravity-cli` presets rather than full model IDs; the actual model is selected by Antigravity.
 2. Show one table: role · tier · model · source (`_lean/config…` file, custom override, role agent, detected, or inherit — and why). Flag a role agent whose model disagrees with the config (it's stale).
 3. Ask, using the kiss question shape, what to change.
 4. Apply changes:

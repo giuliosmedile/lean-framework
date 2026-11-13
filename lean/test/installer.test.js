@@ -31,7 +31,8 @@ test('tier suggestions follow the session model', () => {
   const oc = suggestTiers('opencode', 'amazon-bedrock/eu.anthropic.claude-sonnet-5-5', ['openai/gpt-6-sol']);
   assert.deepEqual(pickTiers(oc), ['inherit', 'amazon-bedrock/eu.anthropic.claude-haiku-5-5']);
   assert.deepEqual(oc.guessed, ['low']);
-  assert.deepEqual(pickTiers(suggestTiers('codex', 'gpt-6', [])), ['inherit', 'inherit']);
+  assert.deepEqual(pickTiers(suggestTiers('codex', 'gpt-6.1-sol', [])), ['gpt-6.1-sol#medium', 'gpt-6-luna#medium']);
+  assert.deepEqual(pickTiers(suggestTiers('codex', 'gpt-6-luna', [])), ['inherit', 'inherit#low']);
 });
 const pickTiers = (s) => [s.mid, s.low];
 
@@ -44,6 +45,46 @@ test('role agents carry the role model in each tool format', () => {
   assert.match(oc.find((a) => a.role === 'implement').content, /mode: subagent\nmodel: anthropic\/claude-sonnet-5-5/);
   assert.doesNotMatch(oc.find((a) => a.role === 'scout').content, /model:/); // inherit → omitted
   assert.equal(resolveModel('some/model', {}), 'some/model');
+});
+
+test('Codex role agents: TOML with model and reasoning effort, read-only by instruction', () => {
+  assert.equal(HARNESSES.codex.perAgentModel, true);
+  const agents = renderRoleAgents('codex', { scout: 'low', implement: 'mid', review: 'top' }, { low: 'gpt-6-luna#medium', mid: 'gpt-6.1-sol' });
+  const by = Object.fromEntries(agents.map((a) => [a.role, a]));
+  assert.equal(by.scout.relPath, '.codex/agents/lean-scout.toml');
+  const scout = TOML.parse(by.scout.content);
+  assert.equal(scout.name, 'lean_scout');
+  assert.equal(scout.model, 'gpt-6-luna');
+  assert.equal(scout.model_reasoning_effort, 'medium');
+  assert.match(scout.developer_instructions, /Read-only role/);
+  assert.equal(scout.skills.include_instructions, false);
+  const impl = TOML.parse(by.implement.content);
+  assert.equal(impl.model, 'gpt-6.1-sol');
+  assert.equal(impl.model_reasoning_effort, undefined);
+  assert.doesNotMatch(impl.developer_instructions, /Read-only role/);
+  const review = TOML.parse(by.review.content);
+  assert.equal(review.model, undefined, 'top → inherit → omitted');
+  assert.throws(() => renderRoleAgents('codex', { scout: 'low' }, { low: 'gpt-6-luna#turbo' }), /reasoning effort/);
+});
+
+test('Codex install: agents, guard hook in .codex/hooks.json merged and removed cleanly', () => {
+  const root = tmp();
+  execFileSync('git', ['-C', root, 'init', '-q']);
+  fs.mkdirSync(path.join(root, '.codex'));
+  const mine = { hooks: { PreToolUse: [{ matcher: 'Bash', hooks: [{ type: 'command', command: 'echo mine' }] }] } };
+  fs.writeFileSync(path.join(root, '.codex/hooks.json'), JSON.stringify(mine));
+  cli('install', '--directory', root, '--tools', 'codex', '--yes', '--no-scout', '--set', 'orchestration.tiers.codex.low=gpt-6-luna#low');
+  assert.ok(exists(root, '.agents/skills/lean-build/SKILL.md'));
+  assert.equal(TOML.parse(fs.readFileSync(path.join(root, '.codex/agents/lean-scout.toml'), 'utf8')).model_reasoning_effort, 'low');
+  const hooks = JSON.parse(fs.readFileSync(path.join(root, '.codex/hooks.json'), 'utf8')).hooks.PreToolUse;
+  assert.equal(hooks.length, 2);
+  assert.equal(hooks[1].matcher, '^apply_patch$');
+  assert.match(hooks[1].hooks[0].command, /git rev-parse --show-toplevel\)\/_lean\/hooks\/frozen-guard\.js/);
+  cli('install', '--directory', root, '--action', 'quick-update', '--yes', '--no-scout');
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root, '.codex/hooks.json'), 'utf8')).hooks.PreToolUse.length, 2, 'no duplicate on re-install');
+  cli('uninstall', '--directory', root, '--yes');
+  assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, '.codex/hooks.json'), 'utf8')), mine);
+  assert.ok(!exists(root, '.codex/agents'));
 });
 
 test('Antigravity CLI uses native worker presets and detects agy', () => {

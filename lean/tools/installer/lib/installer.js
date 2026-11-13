@@ -205,12 +205,17 @@ function install({ projectRoot, tools, answers, orchestration, guardHook = true,
     if (answers[key]) fs.mkdirSync(path.join(projectRoot, answers[key]), { recursive: true });
   }
 
-  // 4b. Hooks: the Claude Code guard (merged into .claude/settings.json) and the optional git pre-commit.
+  // 4b. Hooks: the frozen guard (merged into .claude/settings.json and .codex/hooks.json) and the optional git pre-commit.
   const hooks = [];
   removeClaudeHook(projectRoot);
+  removeCodexHook(projectRoot);
   if (guardHook && tools.includes('claude-code')) {
     addClaudeHook(projectRoot);
     hooks.push('claude-code:frozen-guard');
+  }
+  if (guardHook && tools.includes('codex')) {
+    addCodexHook(projectRoot);
+    hooks.push('codex:frozen-guard');
   }
   if (gitHook) {
     const r = writeGitHook(projectRoot);
@@ -277,9 +282,13 @@ function addClaudeHook(root) {
   fs.writeFileSync(settingsPath(root), JSON.stringify(s, null, 2) + '\n');
 }
 
-/** Remove only LEAN's hook entries; delete settings.json only if LEAN's hook was all it held. */
+/** Remove only LEAN's hook entries; delete the file only if LEAN's hook was all it held. */
 function removeClaudeHook(root) {
-  const f = settingsPath(root);
+  removeJsonHook(root, '.claude/settings.json');
+}
+
+function removeJsonHook(root, rel) {
+  const f = path.join(root, rel);
   if (!fs.existsSync(f)) return;
   let s;
   try {
@@ -296,8 +305,39 @@ function removeClaudeHook(root) {
   if (!Object.keys(s.hooks).length) delete s.hooks;
   if (!Object.keys(s).length) {
     fs.rmSync(f);
-    removeEmptyParents(root, '.claude/settings.json');
+    removeEmptyParents(root, rel);
   } else fs.writeFileSync(f, JSON.stringify(s, null, 2) + '\n');
+}
+
+// Codex: .codex/hooks.json, same three-level shape. apply_patch is Codex's only file-edit tool.
+// Codex runs hooks from the session cwd, so the command locates the project from the git root.
+const codexHooksPath = (root) => path.join(root, '.codex', 'hooks.json');
+function codexGuardCmd(root) {
+  const g = gitHookPath(root);
+  if (!g) return `node "${posix(path.join(root, GUARD_REL))}"`;
+  const rel = g.rel === '.' ? GUARD_REL : `${g.rel}/${GUARD_REL}`;
+  return `node "$(git rev-parse --show-toplevel)/${rel}"`;
+}
+
+function addCodexHook(root) {
+  const f = codexHooksPath(root);
+  let s = {};
+  if (fs.existsSync(f)) {
+    try {
+      s = JSON.parse(fs.readFileSync(f, 'utf8'));
+    } catch {
+      throw new Error(`${f} is not valid JSON — fix it or pass --no-guard-hook`);
+    }
+  }
+  s.hooks = s.hooks || {};
+  s.hooks.PreToolUse = s.hooks.PreToolUse || [];
+  s.hooks.PreToolUse.push({ matcher: '^apply_patch$', hooks: [{ type: 'command', command: codexGuardCmd(root), timeout: 10, statusMessage: 'LEAN: checking frozen intent' }] });
+  fs.mkdirSync(path.dirname(f), { recursive: true });
+  fs.writeFileSync(f, JSON.stringify(s, null, 2) + '\n');
+}
+
+function removeCodexHook(root) {
+  removeJsonHook(root, '.codex/hooks.json');
 }
 
 const GIT_MARK = '# lean-method pre-commit hook';
@@ -336,6 +376,7 @@ function uninstall(projectRoot, { keepCustom = true } = {}) {
   const files = readFilesManifest(lp.filesManifest);
   if (!files.size && !fs.existsSync(lp.dir)) return { removed: 0, found: false };
   removeClaudeHook(projectRoot);
+  removeCodexHook(projectRoot);
   removeGitHook(projectRoot);
   let removed = 0;
   for (const rel of files.keys()) {

@@ -77,9 +77,10 @@ platforms:
   codex:
     name: "Codex"
     preferred: true
+    support: full        # custom agents (.codex/agents/*.toml) with per-agent model + effort, guard hook on apply_patch
     installer:
       target_dir: .agents/skills
-      global_target_dir: ~/.codex/skills
+      global_target_dir: ~/.agents/skills
 
   codewhale:
     name: "CodeWhale"

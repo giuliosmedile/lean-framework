@@ -5,6 +5,7 @@
 //   Claude Code: .claude/agents/lean-<role>.md   (model: alias | full id | inherit)
 //   OpenCode:    .opencode/agents/lean-<role>.md (mode: subagent, model: provider/model)
 //   AGY:         .agents/agents/lean-<role>/agent.md (model: native preset)
+//   Codex:       .codex/agents/lean-<role>.toml  (name lean_<role>; "model#effort" → model + model_reasoning_effort)
 
 const ROLE_TEXT = {
   scout: {
@@ -70,10 +71,28 @@ function agyAgent(role, model) {
   return ['---', `name: lean-${role}`, `description: ${JSON.stringify(r.description)}`, 'subagent: true', 'mainAgent: false', `model: ${model}`, '---', '', '# System Prompt', '', COMMON, '', r.body, ''].join('\n');
 }
 
+// Codex custom agent (TOML). Codex can't give one agent a read-only sandbox (it inherits the parent's),
+// so read-only roles are read-only by instruction. A tier value may carry an effort: "gpt-6-luna#high".
+const CODEX_EFFORTS = ['minimal', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
+function codexAgent(role, model) {
+  const r = ROLE_TEXT[role];
+  const [id, effort] = String(model).split('#');
+  if (effort && !CODEX_EFFORTS.includes(effort)) throw new Error(`Codex reasoning effort must be one of ${CODEX_EFFORTS.join(', ')}, not "${effort}".`);
+  const lines = [`name = ${JSON.stringify(`lean_${role}`)}`, `description = ${JSON.stringify(r.description)}`];
+  if (id && id !== 'inherit') lines.push(`model = ${JSON.stringify(id)}`); // omitted → the parent's model
+  if (effort) lines.push(`model_reasoning_effort = ${JSON.stringify(effort)}`);
+  const readOnly = r.readOnly ? ['', 'Read-only role: never edit, create, or delete files, and never run commands that change the repository.'] : [];
+  // A JSON string is a valid TOML basic string (same escapes), so no multi-line quoting edge cases.
+  lines.push(`developer_instructions = ${JSON.stringify([COMMON, '', r.body, ...readOnly].join('\n'))}`);
+  lines.push('', '[skills]', 'include_instructions = false   # workers never invoke skills: skip the skills block, save tokens', '');
+  return lines.join('\n');
+}
+
 const FORMATS = {
   'claude-code': { dir: '.claude/agents', render: claudeAgent },
   opencode: { dir: '.opencode/agents', render: opencodeAgent },
   'antigravity-cli': { dir: '.agents/agents', render: agyAgent, nested: true },
+  codex: { dir: '.codex/agents', render: codexAgent, ext: '.toml' },
 };
 
 /** Returns [{ relPath, content, role, model }] for one harness. */
@@ -82,7 +101,7 @@ function renderRoleAgents(harness, roles, tiers) {
   if (!fmt) return [];
   return Object.entries(roles).map(([role, tier]) => {
     const model = resolveModel(tier, tiers);
-    return { relPath: `${fmt.dir}/lean-${role}${fmt.nested ? '/agent.md' : '.md'}`, content: fmt.render(role, model), role, model };
+    return { relPath: `${fmt.dir}/lean-${role}${fmt.nested ? '/agent.md' : fmt.ext || '.md'}`, content: fmt.render(role, model), role, model };
   });
 }
 

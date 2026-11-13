@@ -298,6 +298,23 @@ test('guard hook: blocks edits to frozen intent and frozen tests, allows the res
   assert.equal(guard(evt('Write', { file_path: path.join(root, 'test/producer.test.js'), content: 'x' })), null, 'unlocked once the story is done');
 });
 
+test('guard hook (Codex): apply_patch is applied in memory and checked the same way', () => {
+  const root = fixture();
+  const rel = 'plan/epics/E2-export/stories/E2-1-producer.md';
+  edit(root, rel, (t) => t.replace('status: todo', 'status: in-progress\nroute: full') + FROZEN);
+  write(root, 'test/producer.test.js', 'assert(1)\n');
+  run('freeze', '--directory', root, '--story', 'E2-1', '--tests', 'test/producer.test.js');
+  const patch = (...body) => ({ tool_name: 'apply_patch', tool_input: { command: ['*** Begin Patch', ...body, '*** End Patch'].join('\n') }, cwd: root });
+  assert.equal(guard(patch(`*** Update File: ${rel}`, '@@ ## Tasks', ' ', '-- [ ] a', '+- [x] a')), null, 'outside the block is fine');
+  assert.match(guard(patch(`*** Update File: ${rel}`, '@@', '-**Problem:** p', '+**Problem:** q')), /frozen intent/);
+  assert.match(guard(patch(`*** Delete File: ${rel}`)), /frozen intent/, 'deleting a frozen spec is blocked');
+  assert.match(guard(patch(`*** Update File: ${rel}`, `*** Move to: plan/elsewhere.md`, '@@', '-- [ ] a', '+- [x] a')), /frozen intent/, 'moving it away is blocked');
+  assert.match(guard(patch('*** Update File: test/producer.test.js', '@@', '-assert(1)', '+assert(true)')), /frozen acceptance test/);
+  assert.match(guard(patch('*** Add File: src/a/new.js', '+x', '*** Delete File: test/producer.test.js')), /frozen acceptance test/, 'any file in a multi-file patch');
+  assert.equal(guard(patch('*** Add File: src/a/new.js', '+x')), null);
+  assert.equal(guard(patch(`*** Update File: ${rel}`, '@@', '-no such line', '+y')), null, 'a patch that cannot apply is left to Codex to reject');
+});
+
 test('claims: atomic, exclusive, visible to next and check', (t) => {
   if (!hasGit()) return t.skip('git not available');
   const root = fixture();

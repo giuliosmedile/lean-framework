@@ -92,7 +92,7 @@ Special stories:
 
 If none apply, the intent was already approved during planning: set `status: ready` and continue.
 
-**Freeze.** Whenever the frozen block is approved (at the checkpoint, at `status: ready` without one, and again after an intent_gap is renegotiated), run `lean-method freeze --story <id>` (ad-hoc: `--file <spec>`). From then on `check` fails if anyone, the implementer included, edits frozen intent (and the installed Claude Code guard hook refuses the edit outright). To renegotiate: `freeze --unlock`, edit with the human's agreement, freeze again.
+**Freeze.** Whenever the frozen block is approved (at the checkpoint, at `status: ready` without one, and again after an intent_gap is renegotiated), run `lean-method freeze --story <id>` (ad-hoc: `--file <spec>`). From then on `check` fails if anyone, the implementer included, edits frozen intent (and the installed guard hook, on Claude Code and Codex, refuses the edit outright). To renegotiate: `freeze --unlock`, edit with the human's agreement, freeze again.
 
 **Acceptance tests first (full route).** Before any implementation, launch a `test` worker:
 

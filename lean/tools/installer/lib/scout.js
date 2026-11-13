@@ -56,7 +56,7 @@ const FAMILY_RULES = [
   { re: /opus/i, family: 'opus', tier: 'top' },
   { re: /sonnet/i, family: 'sonnet', tier: 'mid' },
   { re: /haiku/i, family: 'haiku', tier: 'low' },
-  { re: /(^|[-/._])(nano|mini|lite|flash|small|lightning|tiny|8b|7b|3b)([-._#]|$)/i, family: 'small', tier: 'low' },
+  { re: /(^|[-/._])(nano|mini|lite|flash|luna|small|lightning|tiny|8b|7b|3b)([-._#]|$)/i, family: 'small', tier: 'low' },
   { re: /(^|[-/._])(pro|ultra|max|large|405b)([-._#]|$)/i, family: 'large', tier: 'top' },
 ];
 
@@ -132,10 +132,26 @@ const HARNESSES = {
     name: 'Codex',
     bin: 'codex',
     configDir: '~/.codex',
-    perAgentModel: false,
-    current: () => readTomlKey('~/.codex/config.toml', 'model'),
-    models: () => [],
-    warnings: () => [],
+    perAgentModel: true,
+    agentsDir: '.codex/agents',
+    modelFormat: 'model id, optionally #reasoning-effort (gpt-6-luna#high)',
+    current(projectDir) {
+      return readTomlKey(path.join(projectDir, '.codex/config.toml'), 'model') || readTomlKey('~/.codex/config.toml', 'model');
+    },
+    // Codex has no model-listing command; these are the models its docs recommend for subagents.
+    models: () => ['gpt-6.1-sol', 'gpt-6-luna'],
+    presetModels: true,
+    warnings() {
+      const w = ['Codex custom agents inherit the parent sandbox: read-only roles are read-only by instruction only.'];
+      let cfg = '';
+      try {
+        cfg = fs.readFileSync(home('~/.codex/config.toml'), 'utf8');
+      } catch {
+        /* no user config */
+      }
+      if (/^\s*\[agents\][^[]*^\s*enabled\s*=\s*false/m.test(cfg)) w.push('[agents] enabled = false in ~/.codex/config.toml: subagents are off, so LEAN workers can\'t spawn.');
+      return w;
+    },
   },
   gemini: {
     name: 'Gemini CLI',
@@ -179,6 +195,10 @@ function sibling(current, tier) {
 
 function suggestTiers(code, current, models) {
   const fam = classify(current).family;
+  if (code === 'codex') {
+    if (/luna/i.test(current || '')) return { top: 'inherit', mid: 'inherit', low: 'inherit#low', why: 'session on GPT-6 Luna: workers stay on it, scouts at low effort' };
+    return { top: 'inherit', mid: 'gpt-6.1-sol#medium', low: 'gpt-6-luna#medium', guessed: current ? [] : ['mid', 'low'], why: current ? `session on ${current}: Sol at medium effort for workers, Luna for scouts` : 'no session model found: the models Codex recommends for subagents' };
+  }
   if (code === 'antigravity-cli') return { top: 'inherit', mid: 'pro', low: 'flash', why: 'native AGY presets; the underlying model is selected by Antigravity' };
   if (code === 'claude-code') {
     if (fam === 'opus' || !current) return { top: 'inherit', mid: 'sonnet', low: 'haiku', why: current ? 'session on Opus' : 'Claude Code default session (Opus or Sonnet): Sonnet + Haiku workers' };
