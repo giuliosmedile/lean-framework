@@ -5,12 +5,11 @@
 ```
 lean-framework/
   lean/                    LEAN: the `lean-method` npm package. Edit here.
-  wiki/                    sources of this wiki
-  scripts/publish-wiki.sh  publishes wiki/ to the GitHub wiki
+  wiki/                    source copy of the pages of this wiki
   .gitignore
 ```
 
-- **LEAN:** `lean/` (plus `wiki/` and `scripts/`).
+- **LEAN:** `lean/` (plus `wiki/`).
 - **Baseline (history only):** the BMAD 6.12.4 install that LEAN was derived from and is measured against was committed once in `b6cf242`: `_bmad/` (config, manifests, 5 Python helper scripts), the 29 `bmad-*` skills in `.claude/skills/` and `.agents/skills/`, and 29 pointer files in `.opencode/commands/`. It is comparison material, not LEAN, and the working tree may not contain it. The [size measurements](LEAN-vs-BMAD.md#measured-size) and any comparison run depend on that commit. Recover the files with `git archive b6cf242 .claude .agents .opencode _bmad | tar -x -C <empty-dir>`. BMAD writes its documents to `_bmad-output/` (the `output_folder` in `_bmad/config.toml`); that folder was never committed.
 - **Generated, never edit by hand:** a target project's `_lean/`, `.claude/skills/lean-*` and role agents. They are copies made by the installer. Edit the source in `lean/`, then reinstall; edited copies are backed up to `_lean/_backups/` on update.
 - **Ignored by git:** `node_modules/`, `*.tgz`, `_lean/config.user.toml`, `_lean/custom/config.user.toml`. The root `.gitignore` still lists `explainer/` and Python entries from before 0.5.0.
@@ -128,10 +127,10 @@ module.exports = {
 
 ## Maintain this wiki
 
-- Pages live in `wiki/` in the repo. Edit them there, then run `scripts/publish-wiki.sh`. Do not edit on github.com: those edits never reach the repo.
+- The live wiki is the repository's GitHub wiki, a separate git repo (`lean-framework.wiki.git`). `wiki/` in this repo holds the same pages. Nothing syncs them: change a page in both places, or copy the files from `wiki/` into a clone of the wiki repo and push.
 - Page file names are the page names (`Review-and-Triage.md`, `_Sidebar.md`, `_Footer.md`).
 - Style: no `# H1` (the wiki shows the title); one bold lead line, then `##` sections; ASCII diagrams only; end with `## See also`.
-- Links between pages are relative with `.md` (`[Parallel Teams](Parallel-Teams.md)`). The publish step strips the `.md`.
+- Links between pages are relative with `.md` in `wiki/` (`[Parallel Teams](Parallel-Teams.md)`), so they work when browsed in the repo. The GitHub wiki needs them without the extension. When copying, strip it: `sed -E 's/\]\(([A-Za-z0-9_][A-Za-z0-9_-]*)\.md(#[^)]*)?\)/](\1\2)/g' Page.md`.
 - Every claim must trace to a file in `lean/`. When docs and code disagree, the code wins; fix the doc.
 - When you change behaviour in `lean/`, update the README, `skills/lean-help/guide.md` and the affected wiki page in the same commit.
 

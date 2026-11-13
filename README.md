@@ -84,7 +84,7 @@ See [Supported Tools](https://github.com/giuliosmedile/lean-framework/wiki/Suppo
 | Path | What it is |
 |---|---|
 | [`lean/`](lean/) | **The LEAN package** (`lean-method`): skills, installer, plan CLI, tests. Its own [README](lean/README.md) is the package reference. |
-| [`wiki/`](wiki/) | Sources of the [project wiki](https://github.com/giuliosmedile/lean-framework/wiki). Published with [`scripts/publish-wiki.sh`](scripts/publish-wiki.sh). |
+| [`wiki/`](wiki/) | Source copy of the pages of the [project wiki](https://github.com/giuliosmedile/lean-framework/wiki). |
 | git history, commit `b6cf242` | The BMAD 6.12.4 install LEAN was derived from and is measured against (`_bmad/`, `.claude/skills/bmad-*`, `.agents/`, `.opencode/`). Not part of LEAN, and not in the working tree: recover it with `git archive b6cf242 .claude _bmad`. |
 
 ## Documentation
