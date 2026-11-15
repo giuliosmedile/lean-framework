@@ -41,6 +41,7 @@ Set by tier selection or `--set`, not by plain questions.
 | `orchestration.tiers.<tool>.mid` | model for implement, test, review, check, research | scout suggestion, else `inherit` |
 | `orchestration.tiers.<tool>.low` | model for scouts | scout suggestion, else `inherit` |
 | `orchestration.escalate` | `true` or `false`: re-run a failed worker one tier up | `true` |
+| `loop.verify` | list of shell commands [`lean-loop`](lean-loop.md) runs from the project root at preflight and after every story (not written by the installer; set it in `_lean/custom/config.toml`) | unset |
 | `orchestration.primary` | tool ID, informational | first of `claude-code`, `opencode`, `codex` you installed, else your first tool |
 
 `<tool>` is a tool ID (`claude-code`, `codex`, `opencode`, `antigravity-cli`). What the tiers mean: [Orchestrator and Cost Tiers](Orchestrator-and-Cost-Tiers.md). Value syntax per tool: [Supported Tools](Supported-Tools.md#tier-values-per-tool).

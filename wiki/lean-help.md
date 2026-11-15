@@ -34,6 +34,7 @@ It matches by intent, not keywords, then checks prerequisites against the projec
 - **Run it** when exactly one skill fits, its prerequisites are met, and you asked for the work, not just about it. It says in one line which skill it starts and why, then invokes it with your request unchanged. It does not ask permission first.
 - **Recommend** when two skills fit, a prerequisite is missing, the request is ambiguous, or you only asked which skill to use. You get one recommendation with its reason and at most one alternative, as lettered choices.
 - **Never runs `lean-review` uninvited.** [`lean-review`](lean-review.md) runs only when you say "review".
+- **Never runs `lean-loop` uninvited.** [`lean-loop`](lean-loop.md) spends and commits across many stories, so it runs only when you ask for several stories, the epic, or an unattended run.
 - **Nothing in LEAN fits** (a git question, a one-line typo)? It says so in one line and helps normally.
 
 ## Orient: what next

@@ -43,7 +43,7 @@ The orchestrator verifies it, then routes it: `intent_gap` (back to you), `bad_s
 Each `intent_gap` or `bad_spec` loopback adds to `review_loops`; past 3 it stops and asks you. The first `bad_spec` re-runs the implementer one tier up. An `amend` patches in place and is not a loopback.
 
 **Do I approve every spec? Can it run unattended?**
-The spec checkpoint appears only for open questions, irreversible steps, `checkpoint: spec`, or ad-hoc full-route work. `lean-build --auto` never waits: a question becomes `status: blocked` with a `blocked_reason`, and the run stops.
+The spec checkpoint appears only for open questions, irreversible steps, `checkpoint: spec`, or ad-hoc full-route work. `lean-build --auto` never waits: a question becomes `status: blocked` with a `blocked_reason`, and the run stops. For several stories in a row, use [`lean-loop`](lean-loop.md): it re-checks every story with `lean-method` and parks any that fail a gate.
 
 ## Cost and models
 

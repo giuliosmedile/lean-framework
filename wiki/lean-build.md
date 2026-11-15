@@ -143,7 +143,7 @@ Status lives only in the story frontmatter ([Artifacts and Layout](Artifacts-and
 ## `--auto`
 
 - Never waits for a human; the interactive sanity gates don't run.
-- Always claims a planned story first. With no story given, it takes the next one whose `depends_on` are all `done`.
+- Always claims a planned story first, under the owner it was given if any ([`lean-loop`](lean-loop.md) claims first and passes its own name; claiming again as the same owner is a no-op). With no story given, it takes the next one whose `depends_on` are all `done`.
 - Anything that would wait for you instead writes the question into the story, sets `status: blocked` with `blocked_reason`, releases the claim, reports and stops. Examples: an intent gap, an ambiguous matrix row, a contract-change request, `review_loops` past 3. `lean-method next` lists blocked stories.
 
 ## Human-owned
@@ -161,6 +161,7 @@ Status lives only in the story frontmatter ([Artifacts and Layout](Artifacts-and
 ## See also
 
 - [lean-plan](lean-plan.md): writes the story stubs build grows.
+- [lean-loop](lean-loop.md): runs `--auto` builds back to back and re-checks each story.
 - [Frozen Intent and Guards](Frozen-Intent-and-Guards.md): freeze hashes, frozen tests, guard hook.
 - [Review and Triage](Review-and-Triage.md): lenses, verdicts, routes.
 - [Orchestrator and Cost Tiers](Orchestrator-and-Cost-Tiers.md): roles, tiers, escalation.

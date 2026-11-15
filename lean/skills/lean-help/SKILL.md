@@ -23,6 +23,7 @@ Three jobs, picked from the request:
 | `lean-architecture` | invariants that keep separately built parts consistent; module table; brownfield conventions | a SPEC (or a clear idea / existing code) | `ARCHITECTURE.md` | plan |
 | `lean-plan` | epics, then one epic's stories; team lanes and contracts; readiness; progress status | a final SPEC; ARCHITECTURE for 2+ lanes | `epics.yaml`, epic folders with `EPIC.md`, `stories.yaml`, story files (+ `CONTRACTS.md`) | build |
 | `lean-build` | implement a story, feature, bug fix, or change: plan → code → review → commit | nothing for small work; a story for planned work | build spec + code + commit | next story |
+| `lean-loop` | several planned stories back to back, unattended; each accepted only if the static checks pass | an active epic with `todo` stories; the plan CLI | built stories, `blocked` ones with the failing gate | resolve blocked ones, or `lean-plan status` at the epic's end |
 | `lean-review` | an independent review of a diff, branch, or planning doc, **only when the user says "review"** | something to review | triaged findings | fixes via build |
 | `lean-change` | `course`: a significant mid-flight change or a contract change · `retro`: a finished epic | epics exist | `plan/changes/` proposal / epic `retro.md` | plan or build |
 | `lean-kit` | see or change config: model tiers, role agents, style, the guard hook and the plan CLI | nothing | config overrides | — |
@@ -38,6 +39,7 @@ Installer commands (terminal, not skills): `npx lean-method install | scout | st
    - **Run it** — exactly one skill fits, its prerequisites are met, and the user asked for the work (not just about it). Say in one line which skill you're starting and why, then invoke it (the Skill tool, or the harness's equivalent), passing the user's request through unchanged. Don't ask permission first; that's the point of routing.
    - **Recommend** — two skills fit, a prerequisite is missing, the request is ambiguous, or the user only asked which skill to use. Give one recommendation with its reason, then at most one alternative, as a lettered choice (`(a) run lean-plan ← recommended (b) …`).
    - **Never run `lean-review` uninvited.** It runs only when the user explicitly says "review".
+   - **Never run `lean-loop` uninvited.** It spends and commits across many stories, so it runs only when the user asks for several stories, the epic, or an unattended run. For "next story" alone, route to `lean-build`.
 4. If nothing in LEAN fits (a git question, a one-line typo fix), say so in one line and just help normally.
 
 ## Orient
@@ -67,7 +69,7 @@ Recommend the first step that applies:
 | Active multi-lane epic, `<E>-0` not done | `lean-build <E>-0` — no lane starts before it |
 | A story `blocked` | read its `blocked_reason`: a contract change or plan problem → `lean-change course`; an answer the user owes → ask it |
 | A seam checkpoint due, or a decision overdue (epic CONTRACTS.md) | that checkpoint story / that decision |
-| `todo` stories in an active epic | `lean-build` on the next one (per lane when multi-lane) |
+| `todo` stories in an active epic | `lean-build` on the next one (per lane when multi-lane); `lean-loop` to run several unattended |
 | Every story of an active epic `done` | `lean-plan status` (closes it), then `lean-change retro` on it |
 | All epics `done` | `lean-intent` to extend the SPEC, then `lean-plan` for new epics |
 

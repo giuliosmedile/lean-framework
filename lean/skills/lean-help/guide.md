@@ -7,7 +7,7 @@ A streamlined method for building software with AI agents, derived from BMAD v6.
 - hand work between sessions through files on disk;
 - review adversarially before anything ships.
 
-It drops most of BMAD's ceremony. There are 8 skills instead of 29, and about 19k words of instructions instead of 180k.
+It drops most of BMAD's ceremony. There are 9 skills instead of 29, and about 19k words of instructions instead of 180k.
 
 ## 2. Which path to take
 
@@ -17,6 +17,7 @@ It drops most of BMAD's ceremony. There are 8 skills instead of 29, and about 19
 | A feature | `lean-intent` → `lean-plan` (epics, then the first epic's stories) → `lean-build` per story |
 | A product, or parts built separately | `lean-intent` → `lean-architecture` → `lean-plan` → `lean-build` per story |
 | 2+ people in parallel on an epic | as above; `lean-plan` gives that epic lanes, a `CONTRACTS.md` and story `<E>-0` |
+| Several planned stories, unattended | `lean-loop` (builds them back to back; a story is accepted only if the static checks pass) |
 | Something changed mid-way | `lean-change course` |
 | An epic finished | `lean-change retro` (writes the epic's `retro.md`), then `lean-plan` on the next epic |
 | Not sure | `lean-help` |
@@ -116,6 +117,7 @@ When planning an epic, `lean-plan` asks how many people (or agents) will work on
 | correct-course, retrospective | `lean-change` |
 | customize | `lean-kit` |
 | help | `lean-help` |
+| bmad-loop (orchestrator program + `bmad-loop-*` skills) | `lean-loop`: one skill, no program; the gates are `lean-method` commands |
 | project-context | narrowed into `lean-change retro`: ≤ 3 approved pitfalls for AGENTS.md per retro |
 | walkthrough | narrowed into `lean-build`: a `## How to review` note per story |
 | qa-generate-e2e-tests | `lean-build`: acceptance tests written first, frozen |
@@ -165,7 +167,7 @@ Later files win. Re-running `install` offers `update` (re-ask, your answers as d
 - **A requirement changed mid-build?** `lean-change course`. It proposes old → new edits across SPEC, ARCHITECTURE and stories, and applies them once you approve.
 - **A build keeps looping back?** After 3 review loopbacks it stops and asks you. The first `bad_spec` (wrong approach) moves the implementer up a tier; an `amend` (the spec missed something) patches in place without a rebuild.
 - **Skip architecture?** Yes, for work with no independently built parts. Not for 2+ lanes.
-- **Unattended run?** `lean-build --auto`: it never waits. Questions turn into `blocked` stories with the question written down.
+- **Unattended run?** `lean-build --auto` for one story: it never waits, and questions turn into `blocked` stories with the question written down. `lean-loop` for several: it claims, builds, then re-checks each story with `lean-method` and parks any that fail a gate.
 - **Where are deferred findings?** In each epic's `deferred.md`, and `plan/deferred.md` for ad-hoc or cross-epic items. `lean-plan status` suggests which to promote into stories.
 - **Plan the next epic?** `lean-plan` with the epic id, or just "plan the next epic". It picks the first `planned` epic whose dependencies are done.
 - **Add work to a running project?** Extend the SPEC with `lean-intent` (new CAP ids), then run `lean-plan` to add epics. Existing epics are untouched.

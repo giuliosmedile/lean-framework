@@ -126,6 +126,8 @@ test('fresh --yes install writes skills, pointers, role agents, config, manifest
   cli('install', '--directory', root, '--tools', 'claude-code,opencode', '--yes', '--no-scout', '--user-name', 'Ada', '--set', 'orchestration.tiers.claude-code.mid=sonnet', '--set', 'orchestration.tiers.claude-code.low=haiku');
   for (const rel of [
     '.claude/skills/lean-build/SKILL.md',
+    '.claude/skills/lean-loop/SKILL.md',
+    '.opencode/commands/lean-loop.md',
     '.claude/skills/lean-help/guide.md',
     '.opencode/commands/lean-help.md',
     '.claude/skills/lean-review/lenses/edge-case-hunter.md',
@@ -218,6 +220,18 @@ test('skills: referenced assets exist and no stale single-file layout remains', 
     }
   }
   assert.deepEqual(problems, []);
+});
+
+test('lean-loop: every check code and CLI command it names exists', () => {
+  const skill = fs.readFileSync(path.join(__dirname, '../skills/lean-loop/SKILL.md'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '../tools/installer/lib/plan-check.js'), 'utf8');
+  const { COMMANDS } = require('../tools/installer/plan-cli');
+  const codes = [...skill.matchAll(/`((?:story|diff|epics)\/[a-z-]+)`/g)].map((m) => m[1]);
+  assert.ok(codes.length >= 6, 'the gates name their check codes');
+  for (const code of codes) assert.ok(source.includes(`'${code}'`), `plan-check.js has no ${code}`);
+  const verbs = [...skill.matchAll(/lean-method (\w+)/g)].map((m) => m[1]);
+  assert.ok(verbs.length > 0);
+  for (const verb of verbs) assert.ok(COMMANDS.includes(verb), `lean-method has no "${verb}" command`);
 });
 
 test('input folder: asked, created, stored, and must differ from output', () => {

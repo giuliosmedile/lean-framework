@@ -71,6 +71,7 @@ Not on the npm registry yet. From a local checkout: `npm pack` in `lean/`, then 
                    │                  small work)                               ▼
                    └──────────────────── lean-change (course | retro) ◀── deferred.md, triage logs
 
+ lean-loop   — runs lean-build over an epic's stories unattended; a story is accepted only if the static checks pass.
  lean-review — standalone review of any diff or planning doc; also supplies the lenses build uses.
  lean-kit    — shared rules every skill loads (orchestration + KISS) and the config view.
  lean-help   — routes a request to the right skill (runs it when the fit is clear) and explains LEAN; start here when unsure.
@@ -91,6 +92,20 @@ Every skill is an **orchestrator** on the session model. Bounded jobs go to chea
 - **Guardrails:** triage, frozen intent, ADs, IDs and user decisions are never delegated. Verification-gap findings are trusted without re-checking only when that reviewer ran at top.
 - **Spend is measured:** each build fills a `metrics:` block in its story file (model per role, escalations, tokens as the harness reports them, start/finish). `lean-method metrics` aggregates it with the Review Triage Log rows, so cost and review quality per tier are numbers, not impressions.
 - Run `lean-kit` ("configure lean") to see or change the resolved tiers.
+
+## Unattended: `lean-loop`
+
+`lean-loop` builds an epic's stories back to back: `next` → `claim` → `lean-build --auto` → gates → next. The counterpart of BMAD's `bmad-loop` orchestrator, but a skill, not a program: the session is the controller, so the safety comes from the gates, not from keeping the model out of the loop. After every build it re-checks the story with scripts instead of trusting the report:
+
+| Gate | Static check |
+|---|---|
+| status | read from the story file: `done` |
+| plan | `check --story --json`: no errors, and the warnings that mean a step was skipped (`story/frozen-unhashed`, `story/no-baseline`, `story/no-triage-log`, `story/triage-vocab`, `diff/no-git`) |
+| frozen tests | each `frozen_tests` SHA-256 re-computed (`check` stops looking once a story is `done`) |
+| verification | the story's `## Verification` commands, plus `loop.verify` (whole suite, linter) re-run by the loop |
+| commit | clean tree and a commit since `baseline_commit` |
+
+A story that fails a gate is parked (`blocked` + the failing gate as `blocked_reason`), its commits are left alone, and the loop continues with independent stories. It stops at the story cap (`--max-stories`, default 3), two parked stories in a row, a dirty tree, nothing ready, or the end of the epic, which it never closes: that needs a human's exit evidence. Preflight refuses to start on an inconsistent plan, a dirty tree or a red `loop.verify` baseline. It writes no state of its own; run it again to resume.
 
 ## Parallel teams: lanes and contracts
 
@@ -220,4 +235,4 @@ cd lean && npm install && npm test        # installer tests + plan tooling tests
 node tools/installer/lean-cli.js install  # run the installer from the checkout
 ```
 
-Skills read shared files from their siblings (`lean-kit`, `lean-review`); the installer always installs all eight together.
+Skills read shared files from their siblings (`lean-kit`, `lean-review`); the installer always installs all nine together.

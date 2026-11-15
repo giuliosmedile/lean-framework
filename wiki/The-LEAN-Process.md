@@ -1,4 +1,4 @@
-**LEAN moves an idea to shipped code through eight skills that hand work to each other as files on disk.**
+**LEAN moves an idea to shipped code through nine skills that hand work to each other as files on disk.**
 
 Each skill can run in a fresh agent session: everything it needs is in the files, never in chat history.
 
@@ -17,6 +17,7 @@ Separate **what** (the spec), **how** (the architecture) and **doing** (the buil
                    │                  small work)                               ▼
                    └──────────────────── lean-change (course | retro) ◀── deferred.md, triage logs
 
+ lean-loop   — runs lean-build over an epic's stories unattended; a story is accepted only if the static checks pass.
  lean-review — standalone review of any diff or planning doc; also supplies the lenses build uses.
  lean-kit    — shared rules every skill loads (orchestration + KISS) and the config view.
  lean-help   — routes a request to the right skill and explains LEAN; start here when unsure.
@@ -41,6 +42,7 @@ Separate **what** (the spec), **how** (the architecture) and **doing** (the buil
 | A feature | `lean-intent` → `lean-plan` → `lean-build` per story |
 | A product, or parts built separately | `lean-intent` → `lean-architecture` → `lean-plan` → `lean-build` per story |
 | 2+ people or agents in parallel on an epic | the product path; `lean-plan` adds lanes and contracts ([Parallel Teams](Parallel-Teams.md)) |
+| Several planned stories, unattended | `lean-loop` ([page](lean-loop.md)) |
 | A requirement or contract changed mid-way | `lean-change course` |
 | An epic finished | `lean-change retro`, then `lean-plan` on the next epic |
 | Not sure | `lean-help` |

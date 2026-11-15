@@ -32,6 +32,7 @@ Replace `{project-root}` in values with the project root. Keys:
 | `orchestration.roles.<role>` | tier (`top`/`mid`/`low`) or model per worker role | see orchestration.md §2 |
 | `orchestration.tiers.<harness>.<tier>` | model for that tier in that tool | detected (orchestration.md §1) |
 | `orchestration.escalate` | re-run failed workers one tier up | `true` |
+| `loop.verify` | list of shell commands `lean-loop` runs from the project root before it starts and after every story (whole test suite, linter) | none (reported as unset) |
 
 No `_lean/` folder (skills linked by hand)? Use the defaults; everything still works.
 

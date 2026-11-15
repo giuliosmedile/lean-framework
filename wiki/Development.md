@@ -20,7 +20,7 @@ lean-framework/
 lean/
   package.json             name lean-method, version, bin lean + lean-method, node >=20.19
   README.md  COMPARISON.md package docs; BMAD-vs-LEAN run protocol
-  skills/                  the 8 lean-* skills, copied as-is into projects
+  skills/                  the 9 lean-* skills, copied as-is into projects
   src/module.yaml          install questions -> _lean/config*.toml
   tools/installer/
     lean-cli.js            `npx lean-method <cmd>`; loads every commands/*.js
@@ -71,7 +71,7 @@ skills/lean-plan/
 - **Frontmatter:** exactly two keys, `name` and `description`. The description is one quoted line ending in trigger phrases ("Use when the user says ..."). OpenCode command pointers reuse it.
 - **Discovery:** the installer takes every directory under `skills/` that starts with `lean-` and copies it whole to each tool's skills folder. Extra files ship automatically.
 - **Body:** starts `# Lean <Name>`. Every skill except `lean-kit` then has an **On start** line pointing to `{skill-root}/../lean-kit/SKILL.md`. `{skill-root}` and `{project-root}` are placeholders the agent resolves.
-- **Siblings:** skills read shared files from each other (`lean-kit/orchestration.md`, `kiss.md`; `lean-review/lenses/`, `triage.md`), so all eight always install together.
+- **Siblings:** skills read shared files from each other (`lean-kit/orchestration.md`, `kiss.md`; `lean-review/lenses/`, `triage.md`), so all nine always install together.
 - **Templates:** refer to them as `` `assets/<file>` ``; the installer test fails if the file is missing.
 
 ## Add a platform target

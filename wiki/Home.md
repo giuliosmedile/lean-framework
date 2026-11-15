@@ -2,7 +2,7 @@
 
 ## What LEAN is
 
-Eight skills, a plan CLI and an installer. You install them into a project and talk to your agent as usual. The agent:
+Nine skills, a plan CLI and an installer. You install them into a project and talk to your agent as usual. The agent:
 
 1. asks what you want and writes it down (`lean-intent`);
 2. records only the design decisions that matter (`lean-architecture`);
@@ -33,6 +33,7 @@ LEAN is derived from the BMAD method, keeps its backbone (what / how / doing, fi
 | `lean-architecture`: SPEC → invariants | [lean-architecture](lean-architecture.md) |
 | `lean-plan`: SPEC → epics and stories | [lean-plan](lean-plan.md) |
 | `lean-build`: story → reviewed code | [lean-build](lean-build.md) |
+| `lean-loop`: an epic's stories, unattended, each gated by static checks | [lean-loop](lean-loop.md) |
 | `lean-review`: independent review of any diff or doc | [lean-review](lean-review.md) |
 | `lean-change`: course corrections and retros | [lean-change](lean-change.md) |
 | `lean-kit`: shared rules and configuration | [lean-kit](lean-kit.md) |

@@ -278,6 +278,25 @@ test('frozen tests: freeze --tests locks them; an edit fails check; unlock clear
   assert.doesNotMatch(fs.readFileSync(path.join(root, rel), 'utf8'), /frozen_sha256/);
 });
 
+test('lean-loop premises: skipped steps are only warnings, and check stops watching frozen tests at done', () => {
+  const root = fixture();
+  const rel = 'plan/epics/E2-export/stories/E2-1-producer.md';
+  edit(root, rel, (t) => t.replace('status: todo', 'status: in-progress\nroute: full') + FROZEN);
+  write(root, 'test/producer.test.js', 'assert(1)\n');
+  assert.equal(run('freeze', '--directory', root, '--story', 'E2-1', '--tests', 'test/producer.test.js').code, 0);
+  run('freeze', '--directory', root, '--story', 'E2-1', '--unlock'); // a story whose intent was never (or no longer) hashed
+  edit(root, rel, (t) => t.replace('status: in-progress', 'status: done'));
+  write(root, 'test/producer.test.js', 'assert(true) // weakened after done\n');
+  const found = checkStory(load(root), 'E2-1');
+  // G3 exists because of this: the hash mismatch is invisible to check once the story is done.
+  assert.ok(!codes(found).includes('story/frozen-test-changed'));
+  // G2 promotes exactly these: a skipped step is a warning, so `check --story` alone would exit 0.
+  for (const code of ['story/frozen-unhashed', 'story/no-baseline', 'story/no-triage-log', 'diff/no-git'])
+    assert.equal(found.find((f) => f.code === code)?.level, 'warn', code);
+  assert.deepEqual(errors(found), []);
+  assert.equal(run('check', '--directory', root, '--story', 'E2-1').code, 0);
+});
+
 test('guard hook: blocks edits to frozen intent and frozen tests, allows the rest', () => {
   const root = fixture();
   const rel = 'plan/epics/E2-export/stories/E2-1-producer.md';

@@ -101,7 +101,7 @@ node _lean/bin/lean.js next                # nothing ready — plan the next epi
 
 ```
 LEAN 0.7.0 — installed 2026-11-13T…, updated 2026-11-13T…
-tools: claude-code   skills: 8   role agents: 6
+tools: claude-code   skills: 9   role agents: 6
 style: kiss   input: {project-root}/docs   output: {project-root}/plan   primary: claude-code
   claude-code: scout=haiku · research=sonnet · implement=sonnet · test=sonnet · review=sonnet · check=sonnet
 no installed files edited
@@ -151,7 +151,7 @@ Re-run `install`: `update` re-asks with your answers as defaults, `quick-update`
 ## See also
 
 - [Walkthrough Example](Walkthrough-Example.md): the feature path end to end, with the files each skill writes.
-- [The LEAN Process](The-LEAN-Process.md): how the eight skills hand work to each other.
+- [The LEAN Process](The-LEAN-Process.md): how the nine skills hand work to each other.
 - [CLI Installer](CLI-Installer.md): every installer command and flag.
 - [Supported Tools](Supported-Tools.md): per-tool folders, role agents and hooks.
 - [Configuration](Configuration.md): tiers, overrides and `update` vs `quick-update`.

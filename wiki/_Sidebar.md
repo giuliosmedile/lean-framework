@@ -11,6 +11,7 @@
 - [lean-architecture](lean-architecture.md)
 - [lean-plan](lean-plan.md)
 - [lean-build](lean-build.md)
+- [lean-loop](lean-loop.md)
 - [lean-review](lean-review.md)
 - [lean-change](lean-change.md)
 - [lean-kit](lean-kit.md)

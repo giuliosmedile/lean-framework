@@ -51,7 +51,7 @@ A bad tier value (a Codex effort or an AGY preset that does not exist) fails bef
 ### What lands in the project
 
 ```
-.claude/skills/lean-*/  or  .agents/skills/lean-*/   8 skills, per tool
+.claude/skills/lean-*/  or  .agents/skills/lean-*/   9 skills, per tool
 .claude/agents/ .opencode/agents/ .codex/agents/ .agents/agents/   role agents (full tools only)
 .opencode/commands/lean-*.md                         command pointers (OpenCode)
 _lean/config.toml  config.user.toml  custom/*.toml   config, see Configuration

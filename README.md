@@ -7,7 +7,7 @@
   <a href="https://github.com/giuliosmedile/lean-framework/wiki/LEAN-vs-BMAD">LEAN vs BMAD</a>
 </p>
 
-LEAN is a streamlined, orchestrator-first method for building software with AI coding agents. It is a set of eight skills, a small CLI and an installer. You install it into a project, then talk to your agent as usual: it follows the method, hands work between sessions through files on disk, and reviews its own output adversarially before anything ships.
+LEAN is a streamlined, orchestrator-first method for building software with AI coding agents. It is a set of nine skills, a small CLI and an installer. You install it into a project, then talk to your agent as usual: it follows the method, hands work between sessions through files on disk, and reviews its own output adversarially before anything ships.
 
 It keeps the backbone of the [BMAD method](https://github.com/bmad-code-org/BMAD-METHOD) (it is derived from v6.12.4): separate **what** from **how** from **doing**, hand off through files, review adversarially. It drops the ceremony around that backbone, which is the "agent noise" of the name: activation boilerplate repeated in every skill, requirements re-copied five times, finalize rituals, step menus, per-story approvals. Measured at 0.7.0, LEAN's skills hold 22.7k words against 197.7k for BMAD's 29 ([how it was counted](https://github.com/giuliosmedile/lean-framework/wiki/LEAN-vs-BMAD#measured-size)).
 
@@ -31,6 +31,7 @@ It keeps the backbone of the [BMAD method](https://github.com/bmad-code-org/BMAD
 | `lean-architecture` | Records only the decisions that keep separately built parts consistent: `ARCHITECTURE.md`. Optional for small work. |
 | `lean-plan` | Breaks the SPEC into epics, then into small story files. Asks how many people or agents work in parallel and plans lanes and contracts if more than one. |
 | `lean-build` | Builds one story: frozen spec, tests first, fresh-context implementer, three blind reviewers, triage, loopback. |
+| `lean-loop` | Builds an epic's stories back to back, unattended. Each story is accepted only if static checks pass: frozen intent and tests, trespass, review log, verification, clean commit. |
 | `lean-review` | Standalone review of any diff or planning document. Supplies the review lenses `lean-build` uses. |
 | `lean-change` | `course`: handle a change mid-flight. `retro`: close an epic against evidence. |
 | `lean-kit` | Shared rules (orchestration, KISS) and the configuration view. |
