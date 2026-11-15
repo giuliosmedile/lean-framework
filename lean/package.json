@@ -1,6 +1,6 @@
 {
   "name": "lean-method",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "LEAN — a streamlined, orchestrator-first take on the BMAD method for AI-driven development",
   "keywords": ["ai", "agents", "skills", "orchestrator", "claude-code", "opencode", "bmad"],
   "license": "MIT",

@@ -11,7 +11,7 @@ LEAN is a streamlined, orchestrator-first method for building software with AI c
 
 It keeps the backbone of the [BMAD method](https://github.com/bmad-code-org/BMAD-METHOD) (it is derived from v6.12.4): separate **what** from **how** from **doing**, hand off through files, review adversarially. It drops the ceremony around that backbone, which is the "agent noise" of the name: activation boilerplate repeated in every skill, requirements re-copied five times, finalize rituals, step menus, per-story approvals. Measured at 0.7.0, LEAN's skills hold 22.7k words against 197.7k for BMAD's 29 ([how it was counted](https://github.com/giuliosmedile/lean-framework/wiki/LEAN-vs-BMAD#measured-size)).
 
-> **Status: an experiment.** Version 0.7.0. Not on the npm registry yet. Whether LEAN matches BMAD's quality for less cost and less of your time is an open question; the repo ships the [comparison protocol](https://github.com/giuliosmedile/lean-framework/wiki/LEAN-vs-BMAD) and the metrics to answer it.
+> **Status: an experiment.** Version 0.8.0. Not on the npm registry yet. Whether LEAN matches BMAD's quality for less cost and less of your time is an open question; the repo ships the [comparison protocol](https://github.com/giuliosmedile/lean-framework/wiki/LEAN-vs-BMAD) and the metrics to answer it.
 
 ## The flow
 
