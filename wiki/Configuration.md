@@ -43,6 +43,7 @@ Set by tier selection or `--set`, not by plain questions.
 | `orchestration.tiers.<tool>.mid` | model for implement, test, review, check, research | scout suggestion, else `inherit` |
 | `orchestration.tiers.<tool>.low` | model for scouts | scout suggestion, else `inherit` |
 | `orchestration.escalate` | `true` or `false`: re-run a failed worker one tier up | `true` |
+| `review.max_diff_lines` | [`lean-build`](lean-build.md) reviews an earlier story of an epic once the diff since the last feature review passes this many changed lines; `0` reviews every story (not written by the installer; set it in `_lean/custom/config.toml`) | `1500` |
 | `loop.verify` | list of shell commands [`lean-loop`](lean-loop.md) runs from the project root at preflight and after every story (not written by the installer; set it in `_lean/custom/config.toml`) | unset: `lean-loop` refuses to start unless run with `--allow-no-verify` |
 | `orchestration.primary` | tool ID, informational | first of `claude-code`, `opencode`, `codex` you installed, else your first tool |
 

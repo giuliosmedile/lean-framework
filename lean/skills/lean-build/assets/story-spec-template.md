@@ -12,6 +12,7 @@ blocked_reason: ''
 route: ''              # small | full
 baseline_commit: ''    # set before the first code change; never overwritten
 review_loops: 0
+review: ''             # step 4: feature (this story ran the feature review) | security (security lens only) | deferred
 frozen_sha256: ''      # written by `lean-method freeze` when intent is approved; `check` fails if the frozen block changes
 contract_sha256: ''    # written by `lean-method freeze`: hash of caps, rules, seams, checkpoint, security, frozen_tests, approved_via
 approved_via: ''       # written by `freeze --via`: checkpoint (a human saw the frozen block) | plan (only the plan stub was approved)
@@ -40,8 +41,8 @@ metrics:               # filled at finish; aggregated by `lean-method metrics`. 
 **Approach:** {one or two sentences — the simplest what that passes acceptance, not the how}
 
 **Acceptance:**
-<!-- Copied from the story in stories.yaml, then sharpened. Given/When/Then. -->
-- Given …, when …, then …
+<!-- Copied from the story file, then sharpened. Given/When/Then, numbered: each test names its criterion as "<story id> AC-n". -->
+- AC-1: Given …, when …, then …
 
 ## Boundaries
 

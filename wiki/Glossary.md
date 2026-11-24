@@ -36,6 +36,8 @@
 | Open Questions | Intent gaps the spec cannot settle. They block coding until you answer. | [lean-build](lean-build.md) |
 | Edge-Case Matrix | Table of edge cases in a full-route spec; every row needs a passing test. | [lean-build](lean-build.md) |
 | `baseline_commit` | The commit a build started from, written once. `check --story` measures the diff against it. | [CLI: Plan Tooling](CLI-Plan-Tooling.md) |
+| Review window | The diff the next feature review covers: since the first story built after the last one with `review: feature`. A review is due at the epic's final story, or earlier once the window passes `review.max_diff_lines`. | [lean-build](lean-build.md) |
+| `AC-n` | The number of an acceptance criterion in a build spec. Each test names its criterion as `<story id> AC-n`; `check --story` warns when one has no test. | [lean-build](lean-build.md) |
 | Lens | One reviewer's brief: `adversarial`, `edge-case`, `verification-gap`, `security`, `doc-rubric`. | [Review and Triage](Review-and-Triage.md) |
 | Blind review | Reviewers see only the lens and the content, never the conversation or each other. | [Review and Triage](Review-and-Triage.md) |
 | Triage | The orchestrator verifies each finding, then routes it. Never delegated. | [Review and Triage](Review-and-Triage.md) |

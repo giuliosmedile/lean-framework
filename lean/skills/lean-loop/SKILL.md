@@ -52,7 +52,7 @@ Repeat until a stop rule (§3) fires:
 | # | Gate | Fails when |
 |---|---|---|
 | G1 | `status` in the story file | not `done`. `blocked`: park as is (the reason is written). `in-progress` / `in-review`: the build stopped mid-way, so run step 3 once more (2 attempts per story per run), then park |
-| G2 | `lean-method check --story <id> --json` | any `error` (including `story/contract-changed`), **or** one of these warnings, which mean a step was skipped or a record can't be trusted: `story/frozen-unhashed`, `story/contract-unhashed`, `story/no-baseline`, `story/baseline-unknown`, `story/no-triage-log`, `story/triage-vocab`, `story/security-untested`, `diff/no-git`. Other warnings (`story/size` …) are reported only |
+| G2 | `lean-method check --story <id> --json` | any `error` (including `story/contract-changed`), **or** one of these warnings, which mean a step was skipped or a record can't be trusted: `story/frozen-unhashed`, `story/contract-unhashed`, `story/no-baseline`, `story/baseline-unknown`, `story/no-triage-log`, `story/triage-vocab`, `story/review-due`, `story/security-untested`, `diff/no-git`. Other warnings (`story/size`, `story/ac-untested` …) are reported only |
 | G3 | each `frozen_tests` entry `path#sha256` in the frontmatter | the file's SHA-256 differs or the file is gone (`check` stops looking once a story is `done`) |
 | G4 | the commands in the story's `## Verification`, run by you | any exits ≠ 0. None listed: nothing to run, report the story as `unverified` |
 | G5 | `loop.verify` | any exits ≠ 0 |

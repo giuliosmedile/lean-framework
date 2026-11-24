@@ -17,7 +17,7 @@ Plan tooling: deterministic, no model involved. The skills call these instead of
 
 ```bash
 node _lean/bin/lean.js check [--epic E2]          # lint the plan tree — exit 1 on errors
-node _lean/bin/lean.js check --story E2-3         # one story: frozen intent, contract fields and tests intact, spec size, open deps, baseline, lane trespass
+node _lean/bin/lean.js check --story E2-3         # one story: frozen intent, contract fields and tests intact, spec size, open deps, baseline, lane trespass, review window, AC tests
 node _lean/bin/lean.js next [--lane A]            # in-flight, claimed, blocked, and the next ready story per epic and lane
 node _lean/bin/lean.js freeze --story E2-3 --via checkpoint|plan [--tests a,b]   # hash the approved frozen block and contract fields (and lock the acceptance tests)
 node _lean/bin/lean.js claim --story E2-3 --owner me       # atomic lock so parallel agents never take the same story
@@ -92,7 +92,7 @@ Every skill is an **orchestrator** on the session model. Bounded jobs go to chea
 - **Guardrails:** triage, frozen intent, ADs, IDs and user decisions are never delegated. Verification-gap findings are trusted without re-checking only when that reviewer ran at top.
 - **Spend is measured:** each build fills a `metrics:` block in its story file (model per role, escalations, tokens as the harness reports them, start/finish). `lean-method metrics` aggregates it with the Review Triage Log rows, so cost and review quality per tier are numbers, not impressions.
 - Run `lean-kit` ("configure lean") to see or change the resolved tiers.
-- **Feature-sized work** (a spec of at most three capabilities and no irreversible step) takes the **cheap profile**: one epic and one story, the small route on a mid-tier session (the orchestrator's session is the largest line in the bill), tests written with the code, one review of the whole feature, a short retro. Frozen tests with a separate `test` worker stay for `security: true` and irreversible steps; for an epic of several stories, the review runs once at the end of the last story. See `lean-kit` → *Cheap profile*, and `lean-build` step 4. **Experimental:** it has been run once, on one feature, for cost and time only; its quality is not yet measured ([Experiment Results](https://github.com/giuliosmedile/lean-framework/wiki/Experiment-Results)).
+- **Feature-sized work** (a spec of at most three capabilities and no irreversible step) takes the **cheap profile**: one epic and one story, the small route on a mid-tier session (the orchestrator's session is the largest line in the bill), tests written with the code, one review of the whole feature, a short retro. Frozen tests with a separate `test` worker stay for `security: true` and irreversible steps; for an epic of several stories, the review runs once at the end of the last story, or earlier when the unreviewed diff passes `review.max_diff_lines` (default 1,500 changed lines). See `lean-kit` → *Cheap profile*, and `lean-build` step 4. **Experimental:** it has been run once, on one feature, for cost and time only; its quality is not yet measured ([Experiment Results](https://github.com/giuliosmedile/lean-framework/wiki/Experiment-Results)).
 
 ## Unattended: `lean-loop`
 
@@ -101,7 +101,7 @@ Every skill is an **orchestrator** on the session model. Bounded jobs go to chea
 | Gate | Static check |
 |---|---|
 | status | read from the story file: `done` |
-| plan | `check --story --json`: no errors, and the warnings that mean a step was skipped or a record can't be trusted (`story/frozen-unhashed`, `story/contract-unhashed`, `story/no-baseline`, `story/baseline-unknown`, `story/no-triage-log`, `story/triage-vocab`, `story/security-untested`, `diff/no-git`) |
+| plan | `check --story --json`: no errors, and the warnings that mean a step was skipped or a record can't be trusted (`story/frozen-unhashed`, `story/contract-unhashed`, `story/no-baseline`, `story/baseline-unknown`, `story/no-triage-log`, `story/triage-vocab`, `story/review-due`, `story/security-untested`, `diff/no-git`) |
 | frozen tests | each `frozen_tests` SHA-256 re-computed (`check` stops looking once a story is `done`) |
 | verification | the story's `## Verification` commands, plus `loop.verify` (whole suite, linter) re-run by the loop |
 | commit | clean tree and a commit since `baseline_commit` |

@@ -34,6 +34,7 @@ Replace `{project-root}` in values with the project root. Keys:
 | `orchestration.roles.<role>` | tier (`top`/`mid`/`low`) or model per worker role | see orchestration.md §2 |
 | `orchestration.tiers.<harness>.<tier>` | model for that tier in that tool | detected (orchestration.md §1) |
 | `orchestration.escalate` | re-run failed workers one tier up | `true` |
+| `review.max_diff_lines` | `lean-build` reviews an earlier story of an epic once the diff since the last feature review passes this many changed lines (`0`: review every story) | `1500` |
 | `loop.verify` | list of shell commands `lean-loop` runs from the project root before it starts and after every story (whole test suite, linter) | none: `lean-loop` refuses to start unless run with `--allow-no-verify` |
 
 No `_lean/` folder (skills linked by hand)? Use the defaults; everything still works.
@@ -75,7 +76,7 @@ Anything a script can decide, the script decides. Skills run these instead of wo
 | Command | Replaces |
 |---|---|
 | `lean-method check [--epic E2]` | tree consistency, id/status/lane validity, dependency order and cycles, CAP coverage, seam owners, overdue decisions, frozen-intent and contract hashes, build-spec size (doubled for a feature story) |
-| `lean-method check --story E2-3` | one story before review: its file, frozen block and contract fields, size, open dependencies, a `baseline_commit` behind HEAD, and lane **trespass** since it |
+| `lean-method check --story E2-3` | one story before review: its file, frozen block and contract fields, size, open dependencies, a `baseline_commit` behind HEAD, lane **trespass** since it, the **review window** (and whether a feature review is due), and a test naming each numbered acceptance criterion |
 | `lean-method next [--lane A]` | "what's next": in-flight, blocked, and the next ready story per epic and lane |
 | `lean-method freeze --story E2-3 --via checkpoint\|plan` (or `--file`) | records the hash of the `<frozen-after-approval>` block and of the contract fields (`caps`, `rules`, `seams`, `checkpoint`, `security`, `frozen_tests`, `approved_via`), and who approved the block; `check` fails if either changes later |
 | `lean-method metrics [--epic E2] [--json]` | counting review findings, loops, escalations, tokens, and time across stories |

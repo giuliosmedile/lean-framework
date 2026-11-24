@@ -479,3 +479,75 @@ test('a feature story (the only story of its epic, all its caps) gets twice the 
   const size = checkStory(load(root), 'E1-1').find((f) => f.code === 'story/size');
   assert.match(size.msg, /cap 2000 \(feature story: doubled\)/);
 });
+
+// ── rolling review window, acceptance traceability ─────────────────────
+const { reviewWindow } = require('../tools/installer/lib/plan-check');
+
+/** One epic, three stories in a row, in a git repo with one empty commit. */
+function trio() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lean-trio-'));
+  write(root, 'plan/SPEC.md', '---\nstatus: final\n---\n- **CAP-1 — export**\n');
+  write(root, 'plan/epics.yaml', 'epics:\n  - { id: E1, title: Export, folder: epics/E1-export, caps: [CAP-1], depends_on: [], status: active }\n');
+  write(root, 'plan/epics/E1-export/EPIC.md', '---\nid: E1\nstatus: active\n---\n');
+  write(root, 'plan/epics/E1-export/stories.yaml', `epic: E1\nstories:\n${[1, 2, 3].map((n) => `  - { id: E1-${n}, title: S${n}, file: stories/E1-${n}.md, depends_on: [] }`).join('\n')}\n`);
+  for (const n of [1, 2, 3]) write(root, `plan/epics/E1-export/stories/E1-${n}.md`, story(`E1-${n}`).replace('rules: [AD-1]\n', ''));
+  gitInit(root);
+  return root;
+}
+const head = (root) => execFileSync('git', ['-C', root, 'rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim();
+const commitAll = (root) => execFileSync('git', ['-C', root, '-c', 'user.email=t@t', '-c', 'user.name=t', 'add', '-A']) && execFileSync('git', ['-C', root, '-c', 'user.email=t@t', '-c', 'user.name=t', 'commit', '-q', '-m', 'x']);
+const lines = (n) => Array.from({ length: n }, (_, i) => `line ${i}`).join('\n') + '\n';
+const start = (root, n, extra = '') => edit(root, `plan/epics/E1-export/stories/E1-${n}.md`, (t) => t.replace('status: todo', `status: in-progress\nroute: full\nbaseline_commit: '${head(root)}'${extra}`));
+const finish = (root, n, review) => edit(root, `plan/epics/E1-export/stories/E1-${n}.md`, (t) => t.replace('status: in-progress', `status: done\nreview: ${review}`));
+
+test('review window: an earlier story is reviewed once the unreviewed diff passes review.max_diff_lines', (t) => {
+  if (!hasGit()) return t.skip('git not available');
+  const root = trio();
+  start(root, 1);
+  write(root, 'src/a.js', lines(10));
+  write(root, 'plan/notes.md', lines(500)); // the plan folder never counts
+  let w = reviewWindow(load(root), 'E1-1');
+  assert.deepEqual({ final: w.final, from: w.from, lines: w.lines, cap: w.cap, due: w.due }, { final: false, from: 'E1-1', lines: 10, cap: 1500, due: false });
+  assert.ok(!codes(checkStory(load(root), 'E1-1')).includes('story/review-due'));
+
+  write(root, '_lean/custom/config.toml', '[review]\nmax_diff_lines = 5\n');
+  assert.equal(reviewWindow(load(root), 'E1-1').due, true);
+  assert.match(checkStory(load(root), 'E1-1').find((f) => f.code === 'story/review-due').msg, /review now/);
+  assert.match(run('check', '--directory', root, '--story', 'E1-1').out, /review window since \w+ \(E1-1\): 10 changed lines, cap 5 → feature review due/);
+
+  // reviewed at E1-1: the window starts again at E1-2
+  finish(root, 1, 'feature');
+  commitAll(root);
+  start(root, 2);
+  write(root, 'src/b.js', lines(3));
+  w = reviewWindow(load(root), 'E1-2');
+  assert.deepEqual([w.from, w.lines, w.due], ['E1-2', 3, false]);
+  finish(root, 2, 'deferred');
+  commitAll(root);
+
+  // E1-3 is final: due whatever the size, and its review covers E1-2 too
+  start(root, 3);
+  write(root, 'src/c.js', lines(1));
+  w = reviewWindow(load(root), 'E1-3');
+  assert.deepEqual([w.final, w.from, w.lines, w.due], [true, 'E1-2', 4, true]);
+  assert.match(checkStory(load(root), 'E1-3').find((f) => f.code === 'story/review-due').msg, /final story of E1/);
+  finish(root, 3, 'feature');
+  assert.ok(!codes(checkStory(load(root), 'E1-3')).includes('story/review-due'), 'reviewed');
+  edit(root, 'plan/epics/E1-export/stories/E1-3.md', (s) => s.replace('review: feature', 'review: full'));
+  assert.ok(codes(checkStory(load(root), 'E1-3')).includes('story/review-vocab'));
+});
+
+test('acceptance traceability: every numbered criterion is named by a changed test', (t) => {
+  if (!hasGit()) return t.skip('git not available');
+  const root = trio();
+  const rel = 'plan/epics/E1-export/stories/E1-1.md';
+  edit(root, rel, (s) => s + '<frozen-after-approval reason="x">\n\n**Acceptance:**\n- AC-1: Given notes, when exported, then CSV\n- **AC-2**: Given none, when exported, then a header row\n</frozen-after-approval>\n');
+  start(root, 1);
+  write(root, 'tests/test_export.py', 'def test_e1_1_ac1_exports():\n    pass\n');
+  write(root, 'src/export.py', '# E1-1 AC-2 is handled here\n'); // not a test file
+  write(root, 'tests/test_other.py', '# E1-11 AC-2 belongs to another story\n');
+  const ac = () => checkStory(load(root), 'E1-1').find((f) => f.code === 'story/ac-untested');
+  assert.match(ac().msg, /^AC-2:/);
+  write(root, 'tests/export.test.js', "test('empty export gives a header row (E1-1 AC-2)', () => {});\n");
+  assert.equal(ac(), undefined);
+});

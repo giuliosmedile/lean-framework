@@ -56,7 +56,7 @@ After each build, in order. The first failure parks the story.
 | # | Gate | Fails when |
 |---|---|---|
 | G1 | `status` in the story file | not `done`. A `blocked` story is parked as is. `in-progress` or `in-review` means the build stopped mid-way: it runs once more (2 attempts per story per run), then is parked |
-| G2 | `check --story <id> --json` | any error (including `story/contract-changed`), or a warning that means a step was skipped or a record can't be trusted: `story/frozen-unhashed`, `story/contract-unhashed`, `story/no-baseline`, `story/baseline-unknown`, `story/no-triage-log`, `story/triage-vocab`, `story/security-untested`, `diff/no-git`. Other warnings are reported only. `story/security-untested` parks on purpose: a human, not the loop, accepts a security story without frozen tests |
+| G2 | `check --story <id> --json` | any error (including `story/contract-changed`), or a warning that means a step was skipped or a record can't be trusted: `story/frozen-unhashed`, `story/contract-unhashed`, `story/no-baseline`, `story/baseline-unknown`, `story/no-triage-log`, `story/triage-vocab`, `story/review-due`, `story/security-untested`, `diff/no-git`. Other warnings (`story/size`, `story/ac-untested` …) are reported only. `story/security-untested` parks on purpose: a human, not the loop, accepts a security story without frozen tests |
 | G3 | each `frozen_tests` entry (`path#sha256`) | the file's SHA-256 differs or the file is gone. `check` stops looking once a story is `done`, so the loop recomputes it |
 | G4 | the story's `## Verification` commands, re-run by the loop | any exits non-zero. None listed: the story is reported `unverified` |
 | G5 | `loop.verify` | any exits non-zero |

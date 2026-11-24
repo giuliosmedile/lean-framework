@@ -143,7 +143,7 @@ Plan tooling — deterministic, no model involved (the skills call these too). I
 
 ```bash
 node _lean/bin/lean.js check [--epic E2]     # lint the plan tree: ids, status, deps, CAP coverage, lanes, seams, frozen intent/tests, sizes
-node _lean/bin/lean.js check --story E2-3    # one story: frozen block and tests intact, size, open deps, lane trespass
+node _lean/bin/lean.js check --story E2-3    # one story: frozen block, contract and tests intact, size, open deps, lane trespass, review window, AC tests
 node _lean/bin/lean.js next [--lane A]       # in-flight, claimed, blocked, and next ready story per epic/lane
 node _lean/bin/lean.js freeze --story E2-3 --via checkpoint|plan [--tests a,b]   # lock approved intent, contract fields (and acceptance tests)
 node _lean/bin/lean.js claim --story E2-3 --owner me       # atomic lock so two agents never build the same story

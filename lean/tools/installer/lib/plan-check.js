@@ -6,7 +6,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const { STORY_STATUS, EPIC_STATUS, IN_FLIGHT, section, stripComments, frozenBlock, sha256, statusOf, CONTRACT_KEYS, APPROVED_VIA, contractHash } = require('./plan');
+const { STORY_STATUS, EPIC_STATUS, IN_FLIGHT, REVIEW_KINDS, section, stripComments, frozenBlock, sha256, statusOf, CONTRACT_KEYS, APPROVED_VIA, contractHash } = require('./plan');
 const { triageRows, VERDICTS, ROUTES } = require('./metrics');
 const { listClaims, hasGit } = require('./claims');
 
@@ -375,14 +375,106 @@ function checkStory(plan, id) {
   }
   // baseline_commit is written once, before the first change: it must be a commit on this branch
   const base = s.exists && s.fm.baseline_commit ? String(s.fm.baseline_commit) : '';
-  if (base && base !== 'NO_VCS' && ['in-progress', 'in-review', 'done'].includes(statusOf(s)) && hasGit(plan.root)) {
+  const built = s.exists && BUILT.includes(statusOf(s)) && ['full', 'small'].includes(s.fm.route);
+  if (base && base !== 'NO_VCS' && BUILT.includes(statusOf(s)) && hasGit(plan.root)) {
     try {
       execFileSync('git', ['-C', plan.root, 'merge-base', '--is-ancestor', base, 'HEAD'], { stdio: 'ignore' });
     } catch {
       add('warn', 'story/baseline-unknown', id, `baseline_commit ${base} is not a commit behind HEAD — the review and trespass diffs would be wrong`);
     }
   }
+  // review: due at the final story, or earlier once the unreviewed diff passes review.max_diff_lines
+  if (s.exists && s.fm.review && !REVIEW_KINDS.includes(s.fm.review)) add('warn', 'story/review-vocab', id, `review "${s.fm.review}" is not one of ${REVIEW_KINDS.join(' | ')}`);
+  if (built && s.fm.review !== 'feature') {
+    const w = reviewWindow(plan, id);
+    if (w && w.due)
+      add('warn', 'story/review-due', id, w.final
+        ? `final story of ${s.epic}: review the feature on the diff since ${w.base} (${w.from}), ${w.lines} changed lines`
+        : `${w.lines} changed lines since ${w.base} (${w.from}) without a feature review > review.max_diff_lines ${w.cap} — review now, on that diff`);
+  }
+  // every numbered acceptance criterion has a test that names it
+  if (built) {
+    const missing = untestedAcceptance(plan, s);
+    if (missing && missing.length)
+      add('warn', 'story/ac-untested', id, `${missing.join(', ')}: no changed test file names it (e.g. "${s.id} ${missing[0]}" in a test name or comment) — add the test, or say in Implementation Notes why it can't be tested`);
+  }
   return findings.concat(s.exists ? checkTrespass(plan, s) : []);
+}
+
+// ── review window and acceptance traceability (story-scoped, need git) ──
+const BUILT = ['in-progress', 'in-review', 'done'];
+const OPEN = ['todo', 'draft', 'ready', 'in-progress', 'blocked'];
+
+/** A story is final when no other story of its epic is still open: its review covers the rest of the feature. */
+const isFinal = (e, s) => !e.stories.some((x) => x !== s && OPEN.includes(statusOf(x)));
+
+/** Changed lines since `base`: the tracked diff to the working tree plus untracked files, outside the plan folder and _lean/. */
+function diffLines(plan, base) {
+  const git = (...a) => execFileSync('git', ['-C', plan.root, ...a], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024 });
+  const planRel = normPath(path.relative(plan.root, plan.planDir));
+  const skip = (f) => under(f, planRel) || under(f, '_lean');
+  let lines = 0;
+  for (const row of git('diff', '--numstat', '--relative', base).split('\n').filter(Boolean)) {
+    const [added, deleted, file] = row.split('\t');
+    if (added !== '-' && !skip(file)) lines += Number(added) + Number(deleted);
+  }
+  for (const file of git('ls-files', '--others', '--exclude-standard').split('\n').filter(Boolean)) {
+    if (skip(file)) continue;
+    const buf = fs.readFileSync(path.join(plan.root, file));
+    if (buf.includes(0)) continue; // binary
+    const text = buf.toString('utf8');
+    lines += text ? text.split('\n').length - (text.endsWith('\n') ? 1 : 0) : 0;
+  }
+  return lines;
+}
+
+/**
+ * Which diff the next feature review of a story's epic covers, and whether it is due at this story (lean-build step 4).
+ * The window opens at the baseline of the first story built after the last story reviewed with `review: feature`.
+ * null without git or a usable baseline.
+ */
+function reviewWindow(plan, id) {
+  const s = plan.stories.get(id);
+  const e = s && plan.epics.find((x) => x.id === s.epic);
+  if (!s || !e || !s.exists || !hasGit(plan.root)) return null;
+  const upto = e.stories.slice(0, e.stories.indexOf(s) + 1);
+  let open = 0;
+  upto.forEach((x, i) => {
+    if (x !== s && x.fm.review === 'feature' && statusOf(x) === 'done') open = i + 1;
+  });
+  const from = upto.slice(open).find((x) => BUILT.includes(statusOf(x)) && x.fm.baseline_commit && x.fm.baseline_commit !== 'NO_VCS');
+  if (!from) return null;
+  const base = String(from.fm.baseline_commit);
+  let lines;
+  try {
+    lines = diffLines(plan, base);
+  } catch {
+    return null;
+  }
+  const final = isFinal(e, s);
+  return { story: id, final, from: from.id, base, lines, cap: plan.reviewMaxLines, due: final || lines > plan.reviewMaxLines };
+}
+
+/** Numbered acceptance criteria (`- AC-1: Given …`) in the frozen block. */
+const acceptanceIds = (text) => [...new Set([...(frozenBlock(text) || '').matchAll(/^\s*[-*]\s*\**(AC-\d+)\b/gm)].map((m) => m[1]))];
+const isTestFile = (f) => /(^|\/)(tests?|__tests__|specs?)\//i.test(f) || /^test_|_test\.|\.test\.|\.spec\.|Tests?\.\w+$/.test(path.basename(f));
+/** "E1-2 AC-3", also as an identifier: test_e1_2_ac3, E1_2_AC_3 … */
+const acRef = (storyId, ac) => new RegExp(`(?<![a-z0-9])${storyId.replace(/-/g, '[-_]')}[\\s:_/.-]*${ac.replace('-', '[-_]?')}(?!\\d)`, 'i');
+
+/** Acceptance ids that no test file changed since the story's baseline (or frozen for it) names. null without git. */
+function untestedAcceptance(plan, s) {
+  const ids = acceptanceIds(s.text);
+  if (!ids.length || !hasGit(plan.root)) return ids.length ? null : [];
+  let files;
+  try {
+    files = changedFiles(plan.root, s.fm.baseline_commit);
+  } catch {
+    return null;
+  }
+  const planRel = normPath(path.relative(plan.root, plan.planDir));
+  const tests = new Set([...files.filter((f) => !under(f, planRel) && isTestFile(f)), ...asList(s.fm.frozen_tests).map((x) => String(x).split('#')[0])]);
+  const text = [...tests].map((f) => (fs.existsSync(path.join(plan.root, f)) ? fs.readFileSync(path.join(plan.root, f), 'utf8') : '')).join('\n');
+  return ids.filter((ac) => !acRef(s.id, ac).test(text));
 }
 
 /** Deterministic "what next": in-flight stories, then the next ready todo per (epic, lane). */
@@ -417,4 +509,4 @@ function nextStories(plan, { lane } = {}) {
   return { inFlight, next, blocked, claimed };
 }
 
-module.exports = { checkPlan, checkStory, checkTrespass, nextStories, specTokens, SPEC_CAP_TOKENS };
+module.exports = { checkPlan, checkStory, checkTrespass, nextStories, reviewWindow, specTokens, SPEC_CAP_TOKENS };

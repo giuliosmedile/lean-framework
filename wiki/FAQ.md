@@ -34,7 +34,7 @@ Ask `lean-help` "what next". It finds specs that are `draft`, `ready`, `in-progr
 ## Review and loops
 
 **Does review run by itself?**
-Inside `lean-build`, yes: blind parallel reviewers, once per feature, after the last story of the epic (adversarial and verification-gap; edge-case when a story ran the full route; security at trust boundaries). Earlier stories of a multi-story epic get only a security pass, and only if they cross a trust boundary. The standalone [lean-review](lean-review.md) runs only when you say "review". See [Review and Triage](Review-and-Triage.md).
+Inside `lean-build`, yes: blind parallel reviewers, once per feature, after the last story of the epic (adversarial and verification-gap; edge-case when a story ran the full route; security at trust boundaries), and earlier when the unreviewed diff passes `review.max_diff_lines` (default 1,500 changed lines). Otherwise earlier stories of a multi-story epic get only a security pass, and only if they cross a trust boundary. The standalone [lean-review](lean-review.md) runs only when you say "review". See [Review and Triage](Review-and-Triage.md).
 
 **What happens to a finding?**
 The orchestrator verifies it, then routes it: `intent_gap` (back to you), `bad_spec` (wrong approach: revert, fix spec, redo), `amend` (spec missed something: add it, patch), `patch` (fix now), `defer` (to `deferred.md`). False ones are rejected.

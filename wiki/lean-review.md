@@ -72,7 +72,7 @@ The skill offers to fix. On yes, it applies patch-grade fixes directly. Anything
 
 | | Standalone review | Review inside `lean-build` |
 |---|---|---|
-| Content | the diff you name | diff since the story's `baseline_commit` |
+| Content | the diff you name | the review window: diff since the first story built after the last feature review |
 | Lenses | by content type | by route; security if `security: true` or a trust boundary |
 | Claims file | spec, PR text or commits, if any | the story spec |
 | Triage | verify, grade, group | plus routes, loopbacks and a Review Triage Log |
