@@ -1,4 +1,4 @@
-**LEAN - LEAN Eliminates Agent Noise.** A streamlined, orchestrator-first method for building software with AI coding agents. This wiki explains the process, every skill, every command and the ideas behind them. It describes LEAN **0.9.0**.
+**LEAN - LEAN Eliminates Agent Noise.** A streamlined, orchestrator-first method for building software with AI coding agents. This wiki explains the process, every skill, every command and the ideas behind them. It describes LEAN **0.10.0**.
 
 ## What LEAN is
 
