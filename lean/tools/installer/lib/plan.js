@@ -90,6 +90,28 @@ function frozenBlock(text) {
 }
 const sha256 = (s) => crypto.createHash('sha256').update(s).digest('hex');
 
+// Frontmatter fields that are part of a story's contract: frozen with the intent block, so a build can't
+// quietly drop a frozen test, lower `security`, or widen `caps`. Hashed from the raw text (the guard hook
+// has no YAML parser and must compute the same value; keep both copies in step).
+const CONTRACT_KEYS = ['caps', 'rules', 'seams', 'checkpoint', 'security', 'frozen_tests', 'approved_via'];
+const APPROVED_VIA = ['checkpoint', 'plan'];
+
+/** Raw value of a top-level frontmatter key: comments stripped, continuation lines joined; '' when absent. */
+function fmRaw(text, key) {
+  const fm = (text || '').replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---/);
+  if (!fm) return '';
+  const lines = fm[1].split('\n');
+  const i = lines.findIndex((l) => l.startsWith(`${key}:`));
+  if (i < 0) return '';
+  const parts = [lines[i].slice(key.length + 1)];
+  for (const l of lines.slice(i + 1)) {
+    if (!/^(\s|-(\s|$))/.test(l)) break;
+    parts.push(l);
+  }
+  return parts.map((p) => p.replace(/(^|\s+)#.*$/, '').trim()).filter(Boolean).join(' ');
+}
+const contractHash = (text) => sha256(CONTRACT_KEYS.map((k) => `${k}: ${fmRaw(text, k)}`).join('\n'));
+
 /** Words outside the Decision Log, and the number of Decision Log entries. */
 function docSize(body) {
   const clean = stripComments(body);
@@ -173,6 +195,10 @@ module.exports = {
   stripComments,
   frozenBlock,
   sha256,
+  CONTRACT_KEYS,
+  APPROVED_VIA,
+  fmRaw,
+  contractHash,
   statusOf,
   read,
 };

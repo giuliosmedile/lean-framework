@@ -34,7 +34,7 @@ If the change has its own account of itself (a build spec, PR description, commi
 
 1. The skill writes the diff to a uniquely named file in the system temp directory.
 2. It announces the content type and lenses in one line.
-3. It launches every lens at once as blind workers, passing file paths (and the paths of any recorded decisions, which the lenses treat as settled), never pasted content. Without subagent support, it runs the lenses one after another in the same session, so they are no longer blind.
+3. It launches every lens at once as blind workers, passing file paths (and the paths of any recorded decisions, which the lenses do not re-argue as preferences; story lines tagged `[ASSUMPTION]` stay open, and a decision that produces a wrong result is reported as `decision-conflict:`), never pasted content. Without subagent support, it runs the lenses one after another in the same session, so they are no longer blind.
 4. After all report, it triages. For code it verifies each finding, grades it and groups duplicates. For documents it verifies each finding against the doc and its sources, drops false ones and groups duplicates. It does not patch or route anything unless you ask.
 5. It reports.
 

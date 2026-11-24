@@ -65,7 +65,7 @@ Totals: cost $20.40 for BMAD and $39.98 for LEAN (196%); time 164.8 and 256.5 mi
 
 1. **Quality cannot be told apart.** The oracle scored both methods between 96.7 and 100 on every feature, so it does not separate them. The one test that failed in C (BMAD) was an artifact of the test harness's logging, not a production defect. The judge's verdicts split (LEAN, BMAD, LEAN): LEAN was more robust on failure paths, BMAD simpler and easier to read.
 2. **LEAN's overhead is fixed, so it weighs most on small features.** Cost went 165%, 183%, 285% as the features shrank. In C, BMAD took a short path (one build with no reviewers, one final review) while LEAN kept its per-story cycle: three stories, the full route with frozen tests for the two riskiest.
-3. **Each method caught what the other missed.** BMAD's final review found a real defect in every feature (A: control characters accepted; B: a session summary that ignored snoozes; C: a dependency available only in development, which would stop production starting). LEAN had none of those in A and C, but in B its plan froze a wrong reading of the brief (its reviewer saw the problem and the finding was rejected on the strength of a frozen clause); in C it had defects of its own (a double notification with slow DNS, no log when a thread failed to start).
+3. **Each method caught what the other missed.** BMAD's final review found a real defect in every feature (A: control characters accepted; B: a session summary that ignored snoozes; C: a dependency available only in development, which would stop production starting). LEAN had none of those in A and C, but in B its build froze a wrong reading of the brief (the orchestrator wrote a Never clause into the frozen block of a story with no checkpoint, so no human saw it; its reviewer saw the problem and the finding was rejected on the strength of that clause); in C it had defects of its own (a double notification with slow DNS, no log when a thread failed to start).
 4. **Both methods' reports sometimes said `pip-audit` was clean when it was not.** The base had 16 and 15 known vulnerabilities, and neither method added any.
 
 ## Where LEAN's extra cost went
@@ -117,10 +117,21 @@ Feature C, once, with the build and the retro on Sonnet.
 - **One run.** There is no measure of how much the same method varies on its own, and the arm order was not alternated: `lean-lite` ran after the other two.
 - **Two changes at once.** The method changed and so did the model (build and retro on Sonnet, where 0.8.0's orchestrator ran on Opus). The run cannot say which change saved what.
 - **A weaker review.** The edge-case lens does not run on a feature story. In the one run, three lenses were enough to find a real defect; whether the fourth would have found more is not known.
-- **One feature size.** `lean-method check` still warns that a feature story's spec is over the 1,000-token cap; the skills tell the agent to accept the warning up to 2,000.
+- **One feature size.** In 0.9.0, `lean-method check` warned that a feature story's spec was over the 1,000-token cap and the skills told the agent to accept the warning up to 2,000; `check` now applies the doubled cap itself.
 - **No judge.** The blind judge was not run on `lean-lite`.
 
 Treat `lean-lite` as a hypothesis with one encouraging data point on cost. For features that are not small, or where a missed bug is expensive, use the full process until it has been tested.
+
+## After the experiment: frozen lines no human saw
+
+The B failure had a mechanical cause: `lean-build` treated everything in a story's frozen block as human intent, even when the story had no checkpoint and the orchestrator had written most of the block. Since then:
+
+- `freeze --via checkpoint|plan` records whether a human saw the block (`approved_via`), and the orchestrator tags `[ASSUMPTION]` on frozen lines that say more than the plan stub, the SPEC, an AD or a human answer;
+- reviewers may challenge those lines and report a decision that produces a wrong result as `decision-conflict:`; triage judges such findings on the merits instead of rejecting them as settled;
+- `freeze` also hashes the frontmatter fields that change what the build must do (`caps`, `rules`, `seams`, `checkpoint`, `security`, `frozen_tests`, `approved_via`), and the guard refuses a rewrite of `baseline_commit`;
+- `lean-loop` refuses to start without `loop.verify` unless told `--allow-no-verify`.
+
+None of this has been measured yet. See [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) and [Review and Triage](Review-and-Triage.md).
 
 ## What would settle it
 

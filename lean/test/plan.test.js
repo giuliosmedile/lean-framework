@@ -272,7 +272,7 @@ test('frozen tests: freeze --tests locks them; an edit fails check; unlock clear
   write(root, 'test/producer.test.js', 'assert(true) // weakened\n');
   assert.ok(codes(checkStory(load(root), 'E2-1')).includes('story/frozen-test-changed'));
   run('freeze', '--directory', root, '--story', 'E2-1', '--unlock-tests');
-  assert.doesNotMatch(fs.readFileSync(path.join(root, rel), 'utf8'), /frozen_tests/);
+  assert.doesNotMatch(fs.readFileSync(path.join(root, rel), 'utf8'), /^frozen_tests:/m);
   assert.ok(!codes(checkStory(load(root), 'E2-1')).includes('story/frozen-test-changed'));
   run('freeze', '--directory', root, '--story', 'E2-1', '--unlock');
   assert.doesNotMatch(fs.readFileSync(path.join(root, rel), 'utf8'), /frozen_sha256/);
@@ -383,4 +383,99 @@ test('contracts lite, exit evidence, document size, archives, triage vocabulary'
   const vocab = checkPlan(load(root)).filter((f) => f.code === 'story/triage-vocab');
   assert.equal(vocab.length, 2, 'bad verdict + bad route; amend is valid');
   assert.equal(aggregate(load(root)).total.triage_routes.amend, 1);
+});
+
+// ── contract fields, approval provenance, baseline, feature-story cap ─────
+const { contractHash } = require('../tools/installer/lib/plan');
+const { contractHash: guardContractHash } = require('../tools/installer/hooks/frozen-guard');
+
+test('freeze also hashes the contract fields; check and the guard catch a change to them', () => {
+  const root = fixture();
+  const rel = 'plan/epics/E2-export/stories/E2-1-producer.md';
+  const abs = path.join(root, rel);
+  edit(root, rel, (t) => t.replace('status: todo', 'status: in-progress\nroute: full\nsecurity: true   # external input') + FROZEN);
+  write(root, 'test/producer.test.js', 'assert(1)\n');
+  assert.equal(run('freeze', '--directory', root, '--story', 'E2-1', '--tests', 'test/producer.test.js').code, 0);
+  const frozen = fs.readFileSync(abs, 'utf8');
+  assert.match(frozen, /^approved_via: plan\b/m, 'no --via: only the plan stub was approved');
+  assert.match(frozen, /^contract_sha256: '[0-9a-f]{64}'/m);
+  assert.deepEqual(errors(checkStory(load(root), 'E2-1')), []);
+
+  // check: lowering security, dropping the frozen tests, widening caps
+  for (const [from, to] of [['security: true', 'security: false'], [/^frozen_tests: .*\n/m, ''], ['caps: [CAP-2]', 'caps: [CAP-2, CAP-1]']]) {
+    fs.writeFileSync(abs, frozen.replace(from, to));
+    assert.ok(codes(checkStory(load(root), 'E2-1')).includes('story/contract-changed'), `${from} → ${to}`);
+  }
+  fs.writeFileSync(abs, frozen.replace('security: true   # external input', 'security: true   # reworded comment'));
+  assert.ok(!codes(checkStory(load(root), 'E2-1')).includes('story/contract-changed'), 'comments are not part of the contract');
+
+  // guard: the same edits are refused before they happen
+  fs.writeFileSync(abs, frozen);
+  const evt = (tool_input) => ({ tool_name: 'Edit', tool_input: { file_path: abs, ...tool_input }, cwd: root });
+  assert.match(guard(evt({ old_string: 'security: true', new_string: 'security: false' })), /contract fields/);
+  assert.match(guard(evt({ old_string: 'caps: [CAP-2]', new_string: 'caps: []' })), /contract fields/);
+  assert.match(guard(evt({ old_string: frozen.match(/^frozen_tests: .*\n/m)[0], new_string: '' })), /contract fields/);
+  assert.match(guard(evt({ old_string: 'approved_via: plan', new_string: 'approved_via: checkpoint' })), /contract fields/);
+  assert.equal(guard(evt({ old_string: 'status: in-progress', new_string: 'status: in-review' })), null, 'status is not a contract field');
+
+  // the guard's dependency-free copy computes the same hash as the CLI, whatever the YAML shape
+  for (const text of [frozen, frozen.replace('caps: [CAP-2]', 'caps:\n  - CAP-2   # main\n- CAP-1'), frozen.replace(/^rules: .*\n/m, '')])
+    assert.equal(guardContractHash(text), contractHash(text));
+
+  // --via
+  assert.equal(run('freeze', '--directory', root, '--story', 'E2-1', '--via', 'chat').code, 1);
+  assert.equal(run('freeze', '--directory', root, '--story', 'E2-1', '--via', 'checkpoint').code, 0);
+  assert.match(fs.readFileSync(abs, 'utf8'), /^approved_via: checkpoint$/m);
+  assert.deepEqual(errors(checkStory(load(root), 'E2-1')), []);
+  run('freeze', '--directory', root, '--story', 'E2-1', '--unlock');
+  assert.doesNotMatch(fs.readFileSync(abs, 'utf8'), /contract_sha256/, 'unlock removes both hashes');
+});
+
+test('contract warnings: older frozen stories, security without frozen tests, bad approved_via', () => {
+  const root = fixture();
+  const rel = 'plan/epics/E2-export/stories/E2-1-producer.md';
+  edit(root, rel, (t) => t.replace('status: todo', 'status: in-progress\nroute: full\nsecurity: true') + FROZEN);
+  let c = codes(checkStory(load(root), 'E2-1'));
+  assert.ok(c.includes('story/security-untested'));
+  run('freeze', '--directory', root, '--story', 'E2-1');
+  edit(root, rel, (t) => t.replace(/^contract_sha256: .*\n/m, ''));
+  c = codes(checkStory(load(root), 'E2-1'));
+  assert.ok(c.includes('story/contract-unhashed'), 'frozen by an older LEAN');
+  edit(root, rel, (t) => t.replace('approved_via: plan', 'approved_via: chat'));
+  assert.ok(codes(checkStory(load(root), 'E2-1')).includes('story/approved-via'));
+});
+
+test('guard: baseline_commit is written once', () => {
+  const root = fixture();
+  const rel = 'plan/epics/E2-export/stories/E2-1-producer.md';
+  const abs = path.join(root, rel);
+  edit(root, rel, (t) => t.replace('status: todo', "status: in-progress\nbaseline_commit: ''"));
+  const evt = (o, n) => ({ tool_name: 'Edit', tool_input: { file_path: abs, old_string: o, new_string: n }, cwd: root });
+  assert.equal(guard(evt("baseline_commit: ''", "baseline_commit: 'abc123'")), null, 'first write is fine');
+  edit(root, rel, (t) => t.replace("baseline_commit: ''", "baseline_commit: 'abc123'"));
+  assert.match(guard(evt("baseline_commit: 'abc123'", "baseline_commit: 'def456'")), /never overwritten/);
+  assert.match(guard(evt("baseline_commit: 'abc123'\n", '')), /never overwritten/);
+});
+
+test('baseline_commit must be a commit behind HEAD', (t) => {
+  if (!hasGit()) return t.skip('git not available');
+  const root = fixture();
+  gitInit(root);
+  const head = execFileSync('git', ['-C', root, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+  const rel = 'plan/epics/E1-foundation/stories/E1-1-scaffold.md';
+  edit(root, rel, (s) => s.replace('status: done', `status: done\nbaseline_commit: '${head.slice(0, 7)}'`));
+  assert.ok(!codes(checkStory(load(root), 'E1-1')).includes('story/baseline-unknown'));
+  edit(root, rel, (s) => s.replace(head.slice(0, 7), 'deadbeef'));
+  assert.ok(codes(checkStory(load(root), 'E1-1')).includes('story/baseline-unknown'));
+});
+
+test('a feature story (the only story of its epic, all its caps) gets twice the size cap', () => {
+  const root = fixture();
+  const rel = 'plan/epics/E1-foundation/stories/E1-1-scaffold.md';
+  const words = (n) => Array(n).fill('word').join(' ');
+  edit(root, rel, (t) => t.replace('status: done', 'status: in-progress\nroute: small') + `## Intent\n\n${words(900)}\n`);
+  assert.ok(!codes(checkStory(load(root), 'E1-1')).includes('story/size'), '≈1200 tokens ≤ 2 × 1000');
+  edit(root, rel, (t) => t.replace('## Intent\n\n', `## Intent\n\n${words(700)} `));
+  const size = checkStory(load(root), 'E1-1').find((f) => f.code === 'story/size');
+  assert.match(size.msg, /cap 2000 \(feature story: doubled\)/);
 });

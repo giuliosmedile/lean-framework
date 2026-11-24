@@ -4,7 +4,11 @@ Shared by `lean-review` (code) and `lean-build`. Runs only after **every** revie
 
 ## 1. Verify and grade each finding
 
-**Settled decisions first.** A finding that only re-argues a decision recorded in the SPEC's Assumptions or Decision Log, or in the epic's or the story's decisions, takes verdict `false`, route `reject`, evidence `decided: {where it is recorded}`: one line, no code reading. If the finding names a concrete bad outcome that the record doesn't mention (not a preference, not "should be stricter"), verify it like any other and, if it's real, route it `intent_gap`: the decision may be the thing that's wrong.
+**Settled decisions first.** A decision is settled when a human has seen it: the SPEC's Assumptions and Decision Log, the epic's decisions, and a story's frozen block. One exception: in a story frozen with `approved_via: plan` (no checkpoint), the lines tagged `[ASSUMPTION]` were written by the orchestrator during the build and no human has seen them, so they are not settled.
+
+- A finding that only re-argues a settled decision takes verdict `false`, route `reject`, evidence `decided: {where it is recorded}`: one line, no code reading.
+- A finding marked `decision-conflict:`, or one that names a concrete bad outcome the record doesn't mention (not a preference, not "should be stricter"): verify it like any other. If it's real, route it `intent_gap`: the decision may be the thing that's wrong.
+- A finding against an unsettled `[ASSUMPTION]` line: verify it on the merits, like any other finding. If it's real, the line was the orchestrator's mistake: route `amend` (correct the line, `lean-build` step 4), or `bad_spec` when the approach rests on it.
 
 If the triage log already has rows (a loopback or resumed review), first match each finding against them: same location, same claim, and the code still reads as the row says → keep the row's verdict and route, mark it `carried`, don't re-verify or re-patch it.
 

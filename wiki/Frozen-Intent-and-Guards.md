@@ -6,8 +6,11 @@ A building agent must not quietly widen a story, weaken its tests, or edit anoth
 
 | What | Recorded in | Set by | Enforced by |
 |---|---|---|---|
-| Intent | `frozen_sha256` in the story's frontmatter | `freeze --story <id>` | `check`, guard hook |
-| Acceptance tests (full route) | `frozen_tests: ['path#sha256', …]` | `freeze --story <id> --tests a,b` | `check`, guard hook |
+| Intent | `frozen_sha256` in the story's frontmatter | `freeze --story <id> --via checkpoint\|plan` | `check`, guard hook |
+| Contract fields (`caps`, `rules`, `seams`, `checkpoint`, `security`, `frozen_tests`, `approved_via`) | `contract_sha256` in the frontmatter | the same `freeze` | `check`, guard hook |
+| Who approved the block | `approved_via: checkpoint \| plan` | `freeze --via` | part of the contract hash |
+| Where the build started | `baseline_commit` | `lean-build`, once | guard hook (no rewrite), `check --story` (a commit behind HEAD) |
+| Acceptance tests (`security: true` or irreversible) | `frozen_tests: ['path#sha256', …]` | `freeze --story <id> --tests a,b` | `check`, guard hook |
 | Who builds the story | git ref `refs/lean/claims/<id>` | `claim --story <id>` | `claim`, `next`, `check` |
 | Which files a lane story may touch | `lanes:` in `stories.yaml` | `lean-plan` | `check --story` |
 
@@ -18,9 +21,9 @@ orchestrator (lean-build)         implement worker        tooling
   |                                     |
   |-- claim --story E2-1 ---------------------------------> refs/lean/claims/E2-1
   |   (spec grown, human approves the frozen block)
-  |-- freeze --story E2-1 ---------------------------------> frozen_sha256 = sha256(block)
+  |-- freeze --story E2-1 --via plan ----------------------> frozen_sha256 = sha256(block), contract_sha256
   |-- test worker writes failing tests, orchestrator judges them
-  |-- freeze --story E2-1 --tests a,b ---------------------> frozen_tests = [path#sha256]
+  |-- freeze --story E2-1 --tests a,b ---------------------> frozen_tests = [path#sha256], contract_sha256 again
   |-- baseline_commit = HEAD; status: in-progress
   |-- spec path ------------------------->|
   |                                       |-- Edit/Write ---> guard hook: allow, or exit 2
@@ -46,11 +49,25 @@ The story file holds the build spec. Its `<frozen-after-approval>` block is the 
 - `check` reports `story/frozen-changed` if the block changes or disappears, in any status. A `ready` or later story with no hash gets the warning `story/frozen-unhashed`.
 - A small-route story freezes its Intent the same way. Ad-hoc specs use `--file plan/adhoc/<slug>.md`.
 
+### Contract fields
+
+Some frontmatter fields change what the build must do as much as the block does: a story could drop its frozen tests, lower `security`, or widen `caps` without touching the block. `freeze` therefore also hashes `caps`, `rules`, `seams`, `checkpoint`, `security`, `frozen_tests` and `approved_via` into `contract_sha256` (comments and spacing ignored).
+
+- `check` reports `story/contract-changed` when one of them changes, in any status. A frozen story without `contract_sha256` (frozen by an older LEAN) gets the warning `story/contract-unhashed`: run `freeze` once to record it.
+- `freeze --unlock` removes both hashes; `freeze` (with or without `--tests`) writes both again.
+- `status`, `route`, `review_loops`, `metrics` and the logs stay free: the build changes them as it goes.
+
+### Who approved it
+
+`approved_via` says how much of the block a human saw. `checkpoint`: the human saw the whole block at the build checkpoint. `plan`: the human approved only the plan stub (its Acceptance), and the orchestrator wrote the rest. In a `plan` story the orchestrator tags `[ASSUMPTION]` on every frozen line that says more than the stub, the SPEC, an AD or a human answer. Those lines are frozen against the implementer like the rest, but they are not *settled*: reviewers may challenge them, and triage judges them on the merits ([Review and Triage](Review-and-Triage.md)). This came from an experiment where an unseen line the orchestrator wrote in the block made triage reject a correct finding ([Experiment Results](Experiment-Results.md)).
+
+`freeze` writes `plan` unless told `--via checkpoint`, and keeps the value already recorded when called again without `--via`.
+
 ## Frozen acceptance tests
 
-On the full route a `test` worker writes failing tests from the spec before any code exists. The orchestrator judges them, then runs `freeze --tests`. The implementer makes them pass and never edits them. If it thinks one is wrong, it stops and reports.
+When a story has `security: true` or an irreversible step, a `test` worker writes failing tests from the spec before any code exists (other stories get their tests from the implementer, with the code). The orchestrator judges them, then runs `freeze --tests`. The implementer makes them pass and never edits them. If it thinks one is wrong, it stops and reports.
 
-`check` reports `story/frozen-test-changed` or `story/frozen-test-missing` for any story not `done` or `retired`.
+`check` reports `story/frozen-test-changed` or `story/frozen-test-missing` for any story not `done` or `retired`. A `security: true` story past `ready` with no frozen tests gets the warning `story/security-untested`; `lean-loop` parks it for a human.
 
 ## Claims
 
@@ -88,6 +105,8 @@ For each file a tool call would touch, the guard works out the content after the
 It blocks (exit 2, with the reason on stderr for the agent) when:
 
 - the file has a `frozen_sha256` and the edit would change the frozen block, drop the block or the hash, or delete or move the file (any status);
+- the file has a `contract_sha256` and the edit would change a contract field or that hash;
+- the file has a `baseline_commit` and the edit would change or remove it;
 - the file is listed in `frozen_tests` of a story whose status is `ready`, `in-progress` or `in-review` (any edit).
 
 Everything else passes. A guard crash allows the edit. A patch that cannot apply is left for Codex to reject.
@@ -100,8 +119,9 @@ LEAN guard: test/producer.test.js is a frozen acceptance test of plan/epics/E2-e
 
 - **Shell edits** (`sed -i`, `echo >`, `git checkout`). The hook sees only edit tools. `check --story` catches the result afterwards, and `lean-build` runs it as its mechanical gate.
 - **Other tools.** OpenCode and Antigravity CLI have no guard hook. `check --story` is the only net there.
-- **Gaps by design.** The guard protects the frozen files, not the `frozen_tests:` line itself, and ignores a block that was never frozen. In `draft`, a frozen test edit passes the guard but fails `check`.
+- **Gaps by design.** The guard ignores a block that was never frozen. In `draft`, a frozen test edit passes the guard but fails `check`.
 - **Unlocking.** `freeze --unlock` is a shell command, so the hook cannot stop it. The rule is in the skills: only after the human agrees.
+- **Who approved.** The agent runs `freeze`, so `approved_via` records what the skill says happened; it is not a signature. A hash proves that nothing changed since the last `freeze`, not that a human approved it. For audited work, have a human review the commit that adds the frozen spec (in a pull request, for example).
 
 ## Git pre-commit hook
 
@@ -116,9 +136,9 @@ Off by default. `npx lean-method install --git-hook` (or answer yes when asked) 
 Intent changed by agreement with the human:
 
 ```bash
-node _lean/bin/lean.js freeze --story E2-1 --unlock     # removes frozen_sha256
-# edit the frozen block with the human
-node _lean/bin/lean.js freeze --story E2-1              # hash the new block
+node _lean/bin/lean.js freeze --story E2-1 --unlock     # removes frozen_sha256 and contract_sha256
+# edit the frozen block (or a contract field) with the human
+node _lean/bin/lean.js freeze --story E2-1 --via checkpoint   # hash the new block: the human saw it
 ```
 
 A test judged wrong by the orchestrator (a test that contradicts the spec is a `test` worker defect):
@@ -130,7 +150,8 @@ node _lean/bin/lean.js freeze --story E2-1 --tests test/producer.test.js   # lis
 ```
 
 - The implementer never unlocks. It stops and reports.
-- After `story/frozen-changed`, restore the block from the approved version in git. Never re-freeze to make `check` pass.
+- After `story/frozen-changed` or `story/contract-changed`, restore the block or field from the approved version in git. Never re-freeze to make `check` pass.
+- An unseen `[ASSUMPTION]` line (`approved_via: plan`) that review proves wrong was the orchestrator's mistake: it unlocks, corrects the line, logs it in the Spec Change Log and freezes again with `--via plan`, without stopping for the human.
 - A review `intent_gap` reverts the code, goes to the human, updates the block, then freezes again ([Review and Triage](Review-and-Triage.md)).
 
 ## See also

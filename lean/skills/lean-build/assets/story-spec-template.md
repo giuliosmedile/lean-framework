@@ -13,7 +13,9 @@ route: ''              # small | full
 baseline_commit: ''    # set before the first code change; never overwritten
 review_loops: 0
 frozen_sha256: ''      # written by `lean-method freeze` when intent is approved; `check` fails if the frozen block changes
-frozen_tests: []       # written by `lean-method freeze --tests` (full route): acceptance tests the implementer may not edit
+contract_sha256: ''    # written by `lean-method freeze`: hash of caps, rules, seams, checkpoint, security, frozen_tests, approved_via
+approved_via: ''       # written by `freeze --via`: checkpoint (a human saw the frozen block) | plan (only the plan stub was approved)
+frozen_tests: []       # written by `lean-method freeze --tests` (security or irreversible): acceptance tests the implementer may not edit
 security: false        # true when the change touches a trust boundary — adds the security lens to review
 context: []            # project docs the implementer must read (SPEC.md, ARCHITECTURE.md, UX.md …) — only what applies
 metrics:               # filled at finish; aggregated by `lean-method metrics`. null = the harness didn't report it — never estimate
@@ -28,6 +30,8 @@ metrics:               # filled at finish; aggregated by `lean-method metrics`. 
 <!-- Length cap: lean-kit/kiss.md §B (kiss: ≤ 1,000 tokens). Bullets and tables only. Boundaries and examples beat step-by-step "how". Delete every comment and every section that doesn't apply (never write "N/A"). A small-route spec keeps only Intent and Implementation Notes. -->
 
 <frozen-after-approval reason="human-owned intent — change only when the human renegotiates">
+
+<!-- A line that says more than the story's Acceptance, the SPEC, an AD or a human answer ends with [ASSUMPTION]. Without a checkpoint no human sees it, so reviewers may challenge it. -->
 
 ## Intent
 
@@ -84,7 +88,7 @@ metrics:               # filled at finish; aggregated by `lean-method metrics`. 
 ## Review Triage Log
 
 <!-- One row per reviewer finding — never drop or merge rows. `lean-method metrics` counts these rows, so keep the vocabulary exact.
-     lens: adversarial | edge-case | verification-gap · verdict: high | medium | low | false | maybe-false · route: patch | bad_spec | intent_gap | defer | reject -->
+     lens: adversarial | edge-case | verification-gap | security · verdict: high | medium | low | false | maybe-false · route: patch | amend | bad_spec | intent_gap | defer | reject -->
 
 | # | lens | verdict | route | evidence |
 |---|---|---|---|---|

@@ -42,7 +42,7 @@ Always: bullets and tables, no paragraph longer than 3 sentences, drop any secti
 
 Enforcement is partial:
 
-- `check` **warns** (never fails) when `SPEC.md` is more than 20% over its page cap (about 500 words a page), or a build spec is over its token cap (words times 4/3). The script knows the plain cap only: for a feature story its `story/size` warning is accepted up to the doubled cap. See [CLI Plan Tooling](CLI-Plan-Tooling.md).
+- `check` **warns** (never fails) when `SPEC.md` is more than 20% over its page cap (about 500 words a page), or a build spec is over its token cap (words times 4/3). For a feature story it applies the doubled cap. See [CLI Plan Tooling](CLI-Plan-Tooling.md).
 - The `UX.md`, AD-count and story-description caps are not checked by a script. The skills apply them while writing (for example `lean-architecture` stays within the AD cap).
 
 ## The reply shape

@@ -104,15 +104,17 @@ Only in the story file's frontmatter: `todo | draft | ready | in-progress | in-r
 | Code | Means | Fix |
 |---|---|---|
 | `story/frozen-changed` | frozen block edited after `freeze` | restore from git; if you renegotiated, `freeze --story E2-3 --unlock`, edit, freeze again |
+| `story/contract-changed` | `caps`, `rules`, `seams`, `checkpoint`, `security`, `frozen_tests` or `approved_via` edited after `freeze` | restore from git; if agreed, `--unlock`, edit, freeze again |
+| `story/contract-unhashed` (warning) | a story frozen by an older LEAN | run `freeze --story E2-3` once |
 | `story/frozen-test-changed`, `-missing` | frozen acceptance test edited or deleted | restore it; if the test is wrong, `freeze --unlock-tests`, fix, freeze again |
 | `diff/trespass` | lane story touched another lane or the contracts | revert; change contracts via `lean-change course` |
 | `stories/unlisted-file`, `stories/file-missing` | story file and `stories.yaml` disagree | make them match |
 | `caps/uncovered` | a SPEC capability is in no epic | add to an epic's `caps`, or list under `uncovered:` with a reason |
 | `lanes/no-e0`, `lanes/no-contracts` | 2+ lanes without `<E>-0` or `CONTRACTS.md` | run `lean-plan` on the epic |
-| `story/size` (warning) | build spec over the cap (kiss: about 1,000 tokens; 2,000 for a feature story, where the warning is accepted) | split, or keep with your OK |
+| `story/size` (warning) | build spec over the cap (kiss: about 1,000 tokens; 2,000 for a feature story) | split, or keep with your OK |
 
 **The guard hook refused an edit.**
-Its message starts `LEAN guard:`. The edit would change a story's `<frozen-after-approval>` block, or a frozen acceptance test while its story is `ready`, `in-progress` or `in-review`. Edit outside the block. If you renegotiated intent: `node _lean/bin/lean.js freeze --story E2-3 --unlock`, edit, freeze again. Don't bypass it with shell edits; `check --story` catches those. See [Frozen Intent and Guards](Frozen-Intent-and-Guards.md).
+Its message starts `LEAN guard:`. The edit would change a story's `<frozen-after-approval>` block, one of its frozen contract fields, a `baseline_commit` already set, or a frozen acceptance test while its story is `ready`, `in-progress` or `in-review`. Edit outside the block. If you renegotiated intent: `node _lean/bin/lean.js freeze --story E2-3 --unlock`, edit, freeze again. Don't bypass it with shell edits; `check --story` catches those. See [Frozen Intent and Guards](Frozen-Intent-and-Guards.md).
 
 **The guard hook never fires.**
 It exists only for Claude Code and Codex, and not with `--no-guard-hook` (`_lean/_config/manifest.yaml` lists `hooks:`). Codex runs it only after you trust it once in `/hooks`. OpenCode and Antigravity CLI have none. On Codex, also check that `[agents] enabled` isn't `false` in `~/.codex/config.toml`: that turns workers off.

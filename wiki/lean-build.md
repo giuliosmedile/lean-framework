@@ -44,7 +44,7 @@ Interactively, a dirty tree, a mismatched branch or several shippable goals stop
 
 The security lens joins either route on `security: true` or a diff that crosses a trust boundary. A small build that hits a gap, an irreversible step or growing scope switches to full and returns to step 2. The `kiss` spec cap is 1,000 tokens; over it, `check` warns `story/size` and the skill proposes a split ([KISS Style](KISS-Style.md)).
 
-A **feature story** is the only story of its epic and covers all of the epic's capabilities (`lean-plan` writes one for a feature-sized spec). It takes the small route whatever its footprint, and its spec cap is twice the plain one: `check` still warns above 1,000 tokens, and the skill accepts the warning up to 2,000 and notes "feature story" in Implementation Notes.
+A **feature story** is the only story of its epic and covers all of the epic's capabilities (`lean-plan` writes one for a feature-sized spec). It takes the small route whatever its footprint, and its spec cap is twice the plain one (`check` applies the doubled cap to it).
 
 **Checkpoint (conditional).** You are asked only if one of these holds:
 - Open Questions exist.
@@ -52,9 +52,9 @@ A **feature story** is the only story of its epic and covers all of the epic's c
 - The story says `checkpoint: spec`.
 - The work is ad-hoc and full route.
 
-All questions come at once, numbered, with options; each answer goes into the frozen block as a decision. You then pick: approve and continue, approve and stop, or review first. With no trigger, the intent was approved during planning: the spec goes to `status: ready` unasked.
+All questions come at once, numbered, with options; each answer goes into the frozen block as a decision. You then pick: approve and continue, approve and stop, or review first. With no trigger, only the plan stub was approved during planning: the spec goes to `status: ready` unasked, and every frozen line the orchestrator wrote beyond the stub, the SPEC, an AD or a human answer ends with `[ASSUMPTION]`. Reviewers may challenge those lines; a real finding against one is corrected by the orchestrator (`amend`), not escalated ([Review and Triage](Review-and-Triage.md)).
 
-**Freeze.** `freeze --story <id>` (`--file <spec>` for ad-hoc) hashes the frozen block; run it again after any renegotiation ([Frozen Intent and Guards](Frozen-Intent-and-Guards.md)).
+**Freeze.** `freeze --story <id> --via checkpoint|plan` (`--file <spec>` for ad-hoc) hashes the frozen block and the contract fields (`caps`, `rules`, `seams`, `checkpoint`, `security`, `frozen_tests`, `approved_via`) and records whether a human saw the block; run it again after any renegotiation ([Frozen Intent and Guards](Frozen-Intent-and-Guards.md)).
 
 **Tests first (only when `security: true` or a step is irreversible, on either route).** A `test` worker writes failing tests for every Acceptance line and Matrix row. The orchestrator checks that each asserts behavior and fails for the right reason, then runs `freeze --story <id> --tests <f1,f2>`. Skipped if behavior can't be tested deterministically (reason in Implementation Notes). In every other story there are no frozen tests: the implementer writes the tests with the code, one per Acceptance line and Matrix row.
 

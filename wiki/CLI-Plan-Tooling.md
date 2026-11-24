@@ -38,13 +38,13 @@ What it checks (✖ error, ▲ warning):
 | Capabilities | `caps/*` | ✖ a `CAP-`/`QR-` id from SPEC.md is in no epic and not under `uncovered:`. ▲ duplicate, unknown, archived but claimed. |
 | Stories index | `stories/*` | ✖ status in `stories.yaml`, bad or duplicate id, unknown lane, missing file, story file not listed, unknown dependency, dependency cycle. |
 | Story file | `story/*` | ✖ frontmatter id or epic mismatch, status outside the list, `blocked` without `blocked_reason`. ▲ unknown AD in `rules`, `story/size` over the cap, no triage log, bad triage words, `done` without `baseline_commit`. |
-| Frozen | `story/frozen-*` | ✖ `frozen-changed`, `frozen-test-changed`, `frozen-test-missing`. ▲ `frozen-unhashed`. See [Frozen Intent and Guards](Frozen-Intent-and-Guards.md). |
+| Frozen | `story/frozen-*`, `story/contract-*` | ✖ `frozen-changed`, `contract-changed`, `frozen-test-changed`, `frozen-test-missing`, `approved-via` (not `checkpoint` or `plan`). ▲ `frozen-unhashed`, `contract-unhashed`, `security-untested` (`security: true` past `ready` with no frozen tests). See [Frozen Intent and Guards](Frozen-Intent-and-Guards.md). |
 | Lanes, seams | `lanes/*`, `seams/*`, `decisions/*` | ✖ lanes but no `CONTRACTS.md` or `<E>-0`, two lanes own the same module, seam without a real-implementation owner or checkpoint. ▲ lane without `modules:`, overdue decision. See [Parallel Teams](Parallel-Teams.md). |
 | Document size | `spec/size`, `doc/log-size` | ▲ SPEC.md over its page cap, Decision Log over 40 entries. |
 | Claims | `claims/*` | ▲ claim on a `done` or unknown story. |
-| Trespass (`--story`) | `diff/*` | ✖ `diff/trespass`. ▲ `diff/no-git`. |
+| Trespass (`--story`) | `diff/*`, `story/baseline-unknown` | ✖ `diff/trespass`. ▲ `diff/no-git`; `baseline_commit` that is not a commit behind HEAD. |
 
-`story/size` estimates tokens as words × 4/3 over the spec body (no frontmatter, comments or append-only logs). Cap: 1000 for style `kiss`, 1600 for `standard`.
+`story/size` estimates tokens as words × 4/3 over the spec body (no frontmatter, comments or append-only logs). Cap: 1000 for style `kiss`, 1600 for `standard`, doubled for a feature story (the only story of its epic, covering all the epic's capabilities).
 
 Illustrative output:
 
@@ -84,7 +84,7 @@ Nothing to offer prints `nothing ready — plan the next epic (lean-plan) or unb
 ## `freeze`
 
 ```bash
-node _lean/bin/lean.js freeze --story E2-1 [--tests test/a.js,test/b.js]
+node _lean/bin/lean.js freeze --story E2-1 --via checkpoint|plan [--tests test/a.js,test/b.js]
 node _lean/bin/lean.js freeze --file plan/adhoc/csv.md          # ad-hoc spec
 node _lean/bin/lean.js freeze --story E2-1 --unlock [--unlock-tests]
 ```
@@ -92,17 +92,19 @@ node _lean/bin/lean.js freeze --story E2-1 --unlock [--unlock-tests]
 | Flag | Effect |
 |---|---|
 | `--story <id>` / `--file <path>` | The spec to freeze. One is required. |
+| `--via <how>` | `checkpoint` (a human saw the frozen block) or `plan` (only the plan stub was approved). Writes `approved_via`. Without it, the recorded value stays, or `plan` when there is none. |
 | `--tests <paths>` | Comma-separated, relative to the project root, each must exist. Writes `frozen_tests: ['path#sha256', …]`, replacing the list. |
-| `--unlock` | Removes `frozen_sha256`. |
+| `--unlock` | Removes `frozen_sha256` and `contract_sha256`. |
 | `--unlock-tests` | Removes `frozen_tests`. |
 
-- Plain `freeze` writes `frozen_sha256: '<hash>'` into the frontmatter and leaves the rest of the file byte-for-byte. Re-running it leaves `frozen_tests` alone.
+- Plain `freeze` writes `frozen_sha256: '<hash>'`, `approved_via` and `contract_sha256: '<hash>'` into the frontmatter and leaves the rest of the file byte-for-byte. Re-running it leaves `frozen_tests` alone.
+- `contract_sha256` covers the raw values of `caps`, `rules`, `seams`, `checkpoint`, `security`, `frozen_tests` and `approved_via` (comments and spacing ignored), so set them before freezing.
 - The hash covers the `<frozen-after-approval>` block with HTML comments and trailing spaces removed. `--tests` also re-hashes the block, so the block must exist.
 - Exit 1 with `story E9-1 not found`, `test file test/nope.js does not exist` or `… has no <frozen-after-approval> block`.
 
 ```
 froze 1 test file(s) in plan/epics/E2-export/stories/E2-1-producer.md
-frozen plan/epics/E2-export/stories/E2-1-producer.md — sha256 ade316816a1c…
+frozen plan/epics/E2-export/stories/E2-1-producer.md — sha256 ade316816a1c…, approved via plan
 ```
 
 **Called by:** `lean-build`, when the frozen block is approved (and again after an `intent_gap` is renegotiated), and after the `test` worker's tests are judged. Concepts and unlocking: [Frozen Intent and Guards](Frozen-Intent-and-Guards.md).

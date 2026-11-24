@@ -7,7 +7,7 @@ A streamlined method for building software with AI agents, derived from BMAD v6.
 - hand work between sessions through files on disk;
 - review adversarially before anything ships.
 
-It drops most of BMAD's ceremony. There are 9 skills instead of 29, and about 19k words of instructions instead of 180k.
+It drops most of BMAD's ceremony. There are 9 skills instead of 29, and about a ninth of BMAD's instruction words (measured on the wiki's LEAN vs BMAD page).
 
 ## 2. Which path to take
 
@@ -57,7 +57,7 @@ plan/                             (the folder name comes from core.output_folder
 - **Intent comes from you.** Skills ask; they don't invent. Every guess is tagged `[ASSUMPTION]` and listed for you to confirm.
 - **Architecture records only invariants.** These are the decisions two independently built stories could otherwise get wrong in incompatible ways.
 - **Stories point, they don't copy.** A story references CAP/AD ids and holds only its own acceptance criteria.
-- **Build specs freeze intent.** Once a spec is approved, the `<frozen-after-approval>` part changes only if you renegotiate it. Open questions block coding.
+- **Build specs freeze intent.** Once a spec is approved, the `<frozen-after-approval>` part changes only if you renegotiate it. Open questions block coding. When you didn't see the block (no checkpoint), the lines the agent added are tagged `[ASSUMPTION]` and reviewers may still challenge them.
 - **Review routes problems back to their source.** Three blind reviewers run in parallel (four when the change touches a trust boundary: the security lens). Each finding is verified, then sent to one of four places:
   - `intent_gap` → back to you
   - `bad_spec` → the approach was wrong: fix the spec, redo the code
@@ -120,7 +120,7 @@ When planning an epic, `lean-plan` asks how many people (or agents) will work on
 | bmad-loop (orchestrator program + `bmad-loop-*` skills) | `lean-loop`: one skill, no program; the gates are `lean-method` commands |
 | project-context | narrowed into `lean-change retro`: ≤ 3 approved pitfalls for AGENTS.md per retro |
 | walkthrough | narrowed into `lean-build`: a `## How to review` note per story |
-| qa-generate-e2e-tests | `lean-build`: acceptance tests written first, frozen |
+| qa-generate-e2e-tests | `lean-build`: acceptance tests written first and frozen when a story has `security: true` or an irreversible step; otherwise with the code |
 | agent personas, party-mode, brainstorming, deep-recon, advanced-elicitation | dropped |
 
 **Main cuts:**
@@ -145,12 +145,12 @@ Plan tooling — deterministic, no model involved (the skills call these too). I
 node _lean/bin/lean.js check [--epic E2]     # lint the plan tree: ids, status, deps, CAP coverage, lanes, seams, frozen intent/tests, sizes
 node _lean/bin/lean.js check --story E2-3    # one story: frozen block and tests intact, size, open deps, lane trespass
 node _lean/bin/lean.js next [--lane A]       # in-flight, claimed, blocked, and next ready story per epic/lane
-node _lean/bin/lean.js freeze --story E2-3 [--tests a,b]   # lock approved intent (and acceptance tests)
+node _lean/bin/lean.js freeze --story E2-3 --via checkpoint|plan [--tests a,b]   # lock approved intent, contract fields (and acceptance tests)
 node _lean/bin/lean.js claim --story E2-3 --owner me       # atomic lock so two agents never build the same story
 node _lean/bin/lean.js metrics [--epic E2] [--json]        # loops, escalations, findings by verdict/lens/model, tokens, time
 ```
 
-Hooks: on Claude Code and Codex a guard hook refuses edits to frozen intent and frozen tests (Codex asks you to trust it once in `/hooks`); optionally a git pre-commit hook runs `check`. Claude Code, Codex, OpenCode and Antigravity CLI (AGY) have **full** support (Codex workers are `lean_<role>` agents with a model and reasoning effort each) (AGY workers use the presets `flash_lite`, `flash`, `pro`, and has no guard hook yet: `check --story` still catches edits to frozen intent and tests); other tools run the skills on one model, without blind review.
+Hooks: on Claude Code and Codex a guard hook refuses edits to frozen intent, frozen contract fields, a `baseline_commit` already set, and frozen tests (Codex asks you to trust it once in `/hooks`); optionally a git pre-commit hook runs `check`. Claude Code, Codex, OpenCode and Antigravity CLI (AGY) have **full** support (Codex workers are `lean_<role>` agents with a model and reasoning effort each) (AGY workers use the presets `flash_lite`, `flash`, `pro`, and has no guard hook yet: `check --story` still catches edits to frozen intent and tests); other tools run the skills on one model, without blind review.
 
 | File | Holds | Who writes it |
 |---|---|---|

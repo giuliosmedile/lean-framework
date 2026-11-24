@@ -102,14 +102,14 @@ Use lean-build: E1-1
 2. The skill freezes the intent, has a `test` worker write failing tests, judges them, and freezes those too. You never type these:
 
    ```
-   $ node _lean/bin/lean.js freeze --story E1-1
-   frozen plan/epics/E1-csv-export/stories/E1-1-export-all.md — sha256 d597572fb744…
+   $ node _lean/bin/lean.js freeze --story E1-1 --via checkpoint
+   frozen plan/epics/E1-csv-export/stories/E1-1-export-all.md — sha256 d597572fb744…, approved via checkpoint
    $ node _lean/bin/lean.js freeze --story E1-1 --tests test/export.test.js
    froze 1 test file(s) in plan/epics/E1-csv-export/stories/E1-1-export-all.md
-   frozen plan/epics/E1-csv-export/stories/E1-1-export-all.md — sha256 d597572fb744…
+   frozen plan/epics/E1-csv-export/stories/E1-1-export-all.md — sha256 d597572fb744…, approved via checkpoint
    ```
 
-3. A fresh `implement` worker builds from the spec alone. `check --story E1-1` passes; the guard hook would refuse any edit to the frozen block or test.
+3. A fresh `implement` worker builds from the spec alone. `check --story E1-1` passes; the guard hook would refuse any edit to the frozen block, its contract fields or the test.
 4. Four reviewers run blind and in parallel (the security lens joins at trust boundaries). The orchestrator verifies each finding. The Review Triage Log in the story file:
 
    | # | lens | verdict | route | evidence |
@@ -133,6 +133,8 @@ Use lean-build: E1-1
    baseline_commit: 'a91e3c7'
    review_loops: 0
    frozen_sha256: 'd597572fb7449623…'            # shortened
+   approved_via: checkpoint                      # you saw the block at the checkpoint
+   contract_sha256: '4be0c1a27e93f5d8…'          # caps, rules, seams, checkpoint, security, frozen_tests, approved_via
    frozen_tests: ['test/export.test.js#91781335…']
    security: true
    metrics:

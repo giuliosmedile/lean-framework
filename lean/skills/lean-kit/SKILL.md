@@ -34,7 +34,7 @@ Replace `{project-root}` in values with the project root. Keys:
 | `orchestration.roles.<role>` | tier (`top`/`mid`/`low`) or model per worker role | see orchestration.md §2 |
 | `orchestration.tiers.<harness>.<tier>` | model for that tier in that tool | detected (orchestration.md §1) |
 | `orchestration.escalate` | re-run failed workers one tier up | `true` |
-| `loop.verify` | list of shell commands `lean-loop` runs from the project root before it starts and after every story (whole test suite, linter) | none (reported as unset) |
+| `loop.verify` | list of shell commands `lean-loop` runs from the project root before it starts and after every story (whole test suite, linter) | none: `lean-loop` refuses to start unless run with `--allow-no-verify` |
 
 No `_lean/` folder (skills linked by hand)? Use the defaults; everything still works.
 
@@ -74,17 +74,17 @@ Anything a script can decide, the script decides. Skills run these instead of wo
 
 | Command | Replaces |
 |---|---|
-| `lean-method check [--epic E2]` | tree consistency, id/status/lane validity, dependency order and cycles, CAP coverage, seam owners, overdue decisions, frozen-intent hashes, build-spec size |
-| `lean-method check --story E2-3` | one story before review: its file, frozen block, size, open dependencies, and lane **trespass** since `baseline_commit` |
+| `lean-method check [--epic E2]` | tree consistency, id/status/lane validity, dependency order and cycles, CAP coverage, seam owners, overdue decisions, frozen-intent and contract hashes, build-spec size (doubled for a feature story) |
+| `lean-method check --story E2-3` | one story before review: its file, frozen block and contract fields, size, open dependencies, a `baseline_commit` behind HEAD, and lane **trespass** since it |
 | `lean-method next [--lane A]` | "what's next": in-flight, blocked, and the next ready story per epic and lane |
-| `lean-method freeze --story E2-3` (or `--file`) | records the hash of the `<frozen-after-approval>` block; `check` fails if it changes later |
+| `lean-method freeze --story E2-3 --via checkpoint\|plan` (or `--file`) | records the hash of the `<frozen-after-approval>` block and of the contract fields (`caps`, `rules`, `seams`, `checkpoint`, `security`, `frozen_tests`, `approved_via`), and who approved the block; `check` fails if either changes later |
 | `lean-method metrics [--epic E2] [--json]` | counting review findings, loops, escalations, tokens, and time across stories |
 | `lean-method claim --story E2-3 --owner <name>` (`--release`, `--list`) | deciding by hand who's building what: an atomic lock (a git ref) so parallel agents never take the same story |
 | `lean-method freeze --story E2-3 --tests a,b` (`--unlock`, `--unlock-tests`) | trusting the implementer not to touch the acceptance tests it must pass |
 
 **How to call it:** wherever a skill says `lean-method <cmd>`, run `node {project-root}/_lean/bin/lean.js <cmd>`. The installer puts it there with its dependencies, so it needs nothing but Node. Without an install, use `lean-method <cmd>` (global) or `npx --no-install lean-method <cmd>` (devDependency). Add `--directory {project-root}` when not running from the root. If none runs, do the same check by reading, as the skill describes, and say once that the CLI is missing (`npx lean-method install` fixes it).
 
-**Guard hook (Claude Code, Codex):** the installer can add a PreToolUse hook that refuses any edit (Edit/Write, or Codex's `apply_patch`) that would change frozen intent or a frozen acceptance test of a story in progress. When it blocks you, its message says why; don't work around it with shell edits. Renegotiate (intent) or judge the test (tests), unlock, edit, freeze again.
+**Guard hook (Claude Code, Codex):** the installer can add a PreToolUse hook that refuses any edit (Edit/Write, or Codex's `apply_patch`) that would change frozen intent, a frozen contract field, a `baseline_commit` already set, or a frozen acceptance test of a story in progress. When it blocks you, its message says why; don't work around it with shell edits. Renegotiate (intent) or judge the test (tests), unlock, edit, freeze again.
 
 **Reading the result:** `✖` errors must be fixed (or put to the user) before the step that needed the check; `▲` warnings are reported, not blocking. Never edit a file just to silence a finding you haven't understood. Use `--json` when you need to act on the findings one by one.
 

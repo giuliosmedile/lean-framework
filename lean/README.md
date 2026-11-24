@@ -17,9 +17,9 @@ Plan tooling: deterministic, no model involved. The skills call these instead of
 
 ```bash
 node _lean/bin/lean.js check [--epic E2]          # lint the plan tree — exit 1 on errors
-node _lean/bin/lean.js check --story E2-3         # one story: frozen intent and tests intact, spec size, open deps, lane trespass
+node _lean/bin/lean.js check --story E2-3         # one story: frozen intent, contract fields and tests intact, spec size, open deps, baseline, lane trespass
 node _lean/bin/lean.js next [--lane A]            # in-flight, claimed, blocked, and the next ready story per epic and lane
-node _lean/bin/lean.js freeze --story E2-3 [--tests a,b]   # hash the approved frozen block (and lock the acceptance tests)
+node _lean/bin/lean.js freeze --story E2-3 --via checkpoint|plan [--tests a,b]   # hash the approved frozen block and contract fields (and lock the acceptance tests)
 node _lean/bin/lean.js claim --story E2-3 --owner me       # atomic lock so parallel agents never take the same story
 node _lean/bin/lean.js metrics [--epic E2] --json # loops, escalations, findings by verdict / lens / reviewer model, tokens, time
 ```
@@ -27,7 +27,7 @@ node _lean/bin/lean.js metrics [--epic E2] --json # loops, escalations, findings
 The same commands are on the package (`npx lean-method check …`).
 
 **Hooks** (asked at install, removed by uninstall):
-- **Guard (Claude Code and Codex, on by default):** a PreToolUse hook that refuses any edit changing a story's frozen intent, or a frozen acceptance test while its story is being built. Claude Code: merged into `.claude/settings.json` next to your own settings, on Edit/MultiEdit/Write. Codex: merged into `.codex/hooks.json`, on `apply_patch` (the guard applies the patch in memory and checks the result); Codex runs project hooks only after you trust them once with `/hooks`. Prose asks the model to behave; the hook makes it. (Shell edits aren't intercepted; `check --story` still catches them.)
+- **Guard (Claude Code and Codex, on by default):** a PreToolUse hook that refuses any edit changing a story's frozen intent, its frozen contract fields, a `baseline_commit` already set, or a frozen acceptance test while its story is being built. Claude Code: merged into `.claude/settings.json` next to your own settings, on Edit/MultiEdit/Write. Codex: merged into `.codex/hooks.json`, on `apply_patch` (the guard applies the patch in memory and checks the result); Codex runs project hooks only after you trust them once with `/hooks`. Prose asks the model to behave; the hook makes it. (Shell edits aren't intercepted; `check --story` still catches them.)
 - **Git pre-commit (off by default, `--git-hook`):** runs `check` and blocks a commit that leaves the plan inconsistent. Never overwrites an existing pre-commit hook.
 
 **Support levels.** `full`: Claude Code, Codex, OpenCode and Antigravity CLI (AGY), where worker tiers, blind parallel review and the fresh-context implementer work. Codex workers take a model id plus an optional reasoning effort (`gpt-6-luna#high`); its custom agents inherit the session's sandbox, so read-only roles are read-only by instruction. AGY workers accept only `inherit`, `flash_lite`, `flash` and `pro` presets; Antigravity chooses the underlying models, which can change. Every other target (`--list-tools` shows the level) is `basic`: the skills install and run, but on one model and with review in the same context. The installer says so when you pick one.
@@ -58,7 +58,7 @@ _lean/
   hooks/                 frozen-guard.js (PreToolUse hook for Claude Code and Codex)
 ```
 
-Not on the npm registry yet. From a local checkout: `npm pack` in `lean/`, then `npx --package=./lean-method-0.4.0.tgz lean-method install`.
+Not on the npm registry yet. From a local checkout: `npm pack` in `lean/`, then `npx --package=./lean-method-0.9.0.tgz lean-method install`.
 
 ## The flow
 
@@ -101,12 +101,12 @@ Every skill is an **orchestrator** on the session model. Bounded jobs go to chea
 | Gate | Static check |
 |---|---|
 | status | read from the story file: `done` |
-| plan | `check --story --json`: no errors, and the warnings that mean a step was skipped (`story/frozen-unhashed`, `story/no-baseline`, `story/no-triage-log`, `story/triage-vocab`, `diff/no-git`) |
+| plan | `check --story --json`: no errors, and the warnings that mean a step was skipped or a record can't be trusted (`story/frozen-unhashed`, `story/contract-unhashed`, `story/no-baseline`, `story/baseline-unknown`, `story/no-triage-log`, `story/triage-vocab`, `story/security-untested`, `diff/no-git`) |
 | frozen tests | each `frozen_tests` SHA-256 re-computed (`check` stops looking once a story is `done`) |
 | verification | the story's `## Verification` commands, plus `loop.verify` (whole suite, linter) re-run by the loop |
 | commit | clean tree and a commit since `baseline_commit` |
 
-A story that fails a gate is parked (`blocked` + the failing gate as `blocked_reason`), its commits are left alone, and the loop continues with independent stories. It stops at the story cap (`--max-stories`, default 3), two parked stories in a row, a dirty tree, nothing ready, or the end of the epic, which it never closes: that needs a human's exit evidence. Preflight refuses to start on an inconsistent plan, a dirty tree or a red `loop.verify` baseline. It writes no state of its own; run it again to resume.
+A story that fails a gate is parked (`blocked` + the failing gate as `blocked_reason`), its commits are left alone, and the loop continues with independent stories. It stops at the story cap (`--max-stories`, default 3), two parked stories in a row, a dirty tree, nothing ready, or the end of the epic, which it never closes: that needs a human's exit evidence. Preflight refuses to start on an inconsistent plan, a dirty tree, or a `loop.verify` that is unset (unless `--allow-no-verify`) or red. It writes no state of its own; run it again to resume.
 
 ## Parallel teams: lanes and contracts
 
@@ -192,7 +192,7 @@ Every planning doc ends with a `## Decision Log` — append-only, one line per d
 | customize | **lean-kit** | Config view + overrides in `_lean/custom/`. |
 | project-context | **lean-change** retro | Narrowed: each retro proposes ≤ 3 evidence-backed pitfalls for `AGENTS.md`/`CLAUDE.md`, written only when you approve. |
 | walkthrough | **lean-build** finish | Narrowed: a ≤ 5-bullet `## How to review` in the story file (where the logic lives, what's risky, how to try it). |
-| qa-generate-e2e-tests | **lean-build** | Acceptance tests are written first by a `test` worker and frozen; the verification-gap lens catches what's still untested. |
+| qa-generate-e2e-tests | **lean-build** | When a story has `security: true` or an irreversible step, acceptance tests are written first by a `test` worker and frozen; otherwise the implementer writes them with the code. The verification-gap lens catches what's still untested. |
 | agent-* personas, party-mode, advanced-elicitation, brainstorming, deep-recon | — | Dropped. See below. |
 
 ## What was cut, and why
@@ -209,11 +209,11 @@ Every planning doc ends with a `## Decision Log` — append-only, one line per d
 
 1. Elicit intent from the human; tag every inference `[ASSUMPTION]`.
 2. Architecture as invariants only (Binds / Prevents / Rule).
-3. Small single-goal build specs with frozen, human-owned intent and an Open Questions gate.
+3. Small single-goal build specs with frozen, human-owned intent and an Open Questions gate; lines the agent added without a human seeing them are tagged `[ASSUMPTION]` and stay open to review.
 4. Implementation in a fresh subagent with the spec as sole source of truth.
 5. Three blind, parallel reviewers (plus a security lens at trust boundaries) + verify-then-route triage (intent_gap / bad_spec / amend / patch / defer) with loopback.
 6. Readiness check before building; deferred-work log; a defined path for mid-flight change.
-7. Acceptance tests written before the code by a separate worker, frozen, and enforced.
+7. Acceptance tests written before the code by a separate worker, frozen, and enforced, where a mistake is expensive (`security: true` or an irreversible step).
 8. An epic is accepted only on demonstrated exit evidence (an e2e test or a demo you watched).
 
 ## Risks to watch in the experiment

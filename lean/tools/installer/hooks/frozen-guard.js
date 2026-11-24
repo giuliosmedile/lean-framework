@@ -3,8 +3,9 @@
 // PreToolUse hook, installed to _lean/hooks/frozen-guard.js. Two hosts, one script:
 //   Claude Code: tool_name Edit | MultiEdit | Write, tool_input.file_path (+ content / old_string …)
 //   Codex:       tool_name apply_patch, tool_input.command = the patch text (*** Begin Patch …)
-// Refuses an edit that would change a story's frozen intent (frozen_sha256) or a frozen acceptance test
-// (frozen_tests) while that story is being built. No dependencies: it must run in any project.
+// Refuses an edit that would change a story's frozen intent (frozen_sha256), its frozen contract fields
+// (contract_sha256), a baseline_commit already set, or a frozen acceptance test (frozen_tests) while that
+// story is being built. No dependencies: it must run in any project.
 // Exit 0 = allow; exit 2 = block, and stderr is shown to the agent (both hosts).
 
 const fs = require('node:fs');
@@ -25,6 +26,23 @@ function fmValue(text, key) {
   return m ? m[1].replace(/\s+#.*$/, '').trim() : null;
 }
 const unquote = (v) => (v || '').replace(/^['"]|['"]$/g, '');
+
+// Same as lib/plan.js (CONTRACT_KEYS, fmRaw, contractHash): this file has no dependencies, so it keeps a copy.
+const CONTRACT_KEYS = ['caps', 'rules', 'seams', 'checkpoint', 'security', 'frozen_tests', 'approved_via'];
+function fmRaw(text, key) {
+  const fm = (text || '').replace(/\r\n/g, '\n').match(/^---\n([\s\S]*?)\n---/);
+  if (!fm) return '';
+  const lines = fm[1].split('\n');
+  const i = lines.findIndex((l) => l.startsWith(`${key}:`));
+  if (i < 0) return '';
+  const parts = [lines[i].slice(key.length + 1)];
+  for (const l of lines.slice(i + 1)) {
+    if (!/^(\s|-(\s|$))/.test(l)) break;
+    parts.push(l);
+  }
+  return parts.map((p) => p.replace(/(^|\s+)#.*$/, '').trim()).filter(Boolean).join(' ');
+}
+const contractHash = (text) => sha256(CONTRACT_KEYS.map((k) => `${k}: ${fmRaw(text, k)}`).join('\n'));
 
 /** The file content the tool call would produce. */
 function after(tool, input, current) {
@@ -174,6 +192,16 @@ function checkFile(root, { file, current, next }, stories) {
       return `${rel}: this edit would change frozen intent (the <frozen-after-approval> block or its hash). Frozen intent belongs to the human. If they renegotiated it, run \`node _lean/bin/lean.js freeze --file ${rel} --unlock\`, make the agreed edit, then freeze again. Otherwise edit only the sections outside the block.`;
   }
 
+  // 1b. contract fields frozen with it (only an edit that changes them; `check` reports older drift)
+  const contract = current && unquote(fmValue(current, 'contract_sha256'));
+  if (contract && (next == null || contractHash(next) !== contractHash(current) || unquote(fmValue(next, 'contract_sha256')) !== contract))
+    return `${rel}: this edit would change the story's contract fields (${CONTRACT_KEYS.join(', ')}) or their hash. They were frozen with the intent. If the human agreed to the change, run \`node _lean/bin/lean.js freeze --file ${rel} --unlock\`, make it, then freeze again. Otherwise leave them as they are.`;
+
+  // 1c. baseline_commit is written once: moving it would hide changes from the review and trespass diffs
+  const base = current && unquote(fmValue(current, 'baseline_commit'));
+  if (base && next != null && unquote(fmValue(next, 'baseline_commit')) !== base)
+    return `${rel}: baseline_commit is set (${base}) and is never overwritten — the review and trespass diffs start from it.`;
+
   // 2. frozen acceptance tests of a story in progress
   for (const story of stories()) {
     const text = fs.readFileSync(story, 'utf8');
@@ -212,4 +240,4 @@ if (require.main === module) {
     }
   });
 }
-module.exports = { check, after, frozenBlock, parsePatch, applyUpdate };
+module.exports = { check, after, frozenBlock, contractHash, parsePatch, applyUpdate };

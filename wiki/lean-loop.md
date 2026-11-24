@@ -19,6 +19,7 @@ Every decision comes from an exit code, a `--json` field, or a status read from 
 | `--epic <E>`, `--lane <id>` | Narrow the queue to one epic or lane. |
 | `--max-stories <n>` | Stop after `n` stories. Default 3: the loop shares one context. For a fresh context per story use `1` and run it again. |
 | `--stop-on-block` | Stop at the first parked story. Default: continue with independent stories. |
+| `--allow-no-verify` | Run without `loop.verify`. The report says `verify: unset (--allow-no-verify)`. |
 | `--dry-run` | Preflight and the next story per lane. Nothing is claimed or built. |
 
 Example prompts (illustrative):
@@ -37,10 +38,10 @@ It stops, naming the failing line, unless all of these pass. The plan CLI is req
 |---|---|---|
 | P1 | `check [--epic E] --json` | no errors |
 | P2 | `git status --porcelain`, current branch | clean tree, on a branch |
-| P3 | `loop.verify` commands, once | all exit 0. A red baseline would blame every story |
+| P3 | `loop.verify` commands, once | set, and all exit 0. A red baseline would blame every story. Unset passes only with `--allow-no-verify` |
 | P4 | `next --json` | something to do: a `next` entry, or an `inFlight` story this loop claimed |
 
-It also reports, without refusing, whether the [guard hook](Frozen-Intent-and-Guards.md) is registered and whether `loop.verify` is unset.
+It also reports, without refusing, whether the [guard hook](Frozen-Intent-and-Guards.md) is registered.
 
 ## Claims and resuming
 
@@ -55,7 +56,7 @@ After each build, in order. The first failure parks the story.
 | # | Gate | Fails when |
 |---|---|---|
 | G1 | `status` in the story file | not `done`. A `blocked` story is parked as is. `in-progress` or `in-review` means the build stopped mid-way: it runs once more (2 attempts per story per run), then is parked |
-| G2 | `check --story <id> --json` | any error, or a warning that means a step was skipped: `story/frozen-unhashed`, `story/no-baseline`, `story/no-triage-log`, `story/triage-vocab`, `diff/no-git`. Other warnings are reported only |
+| G2 | `check --story <id> --json` | any error (including `story/contract-changed`), or a warning that means a step was skipped or a record can't be trusted: `story/frozen-unhashed`, `story/contract-unhashed`, `story/no-baseline`, `story/baseline-unknown`, `story/no-triage-log`, `story/triage-vocab`, `story/security-untested`, `diff/no-git`. Other warnings are reported only. `story/security-untested` parks on purpose: a human, not the loop, accepts a security story without frozen tests |
 | G3 | each `frozen_tests` entry (`path#sha256`) | the file's SHA-256 differs or the file is gone. `check` stops looking once a story is `done`, so the loop recomputes it |
 | G4 | the story's `## Verification` commands, re-run by the loop | any exits non-zero. None listed: the story is reported `unverified` |
 | G5 | `loop.verify` | any exits non-zero |
@@ -82,7 +83,7 @@ The first that applies is named in the report.
 
 ## Config
 
-`loop.verify` in `_lean/custom/config.toml`: shell commands run from the project root at preflight and after every story.
+`loop.verify` in `_lean/custom/config.toml`: shell commands run from the project root at preflight and after every story. Required: without it a story can break a test outside the files it touched and still pass every gate, so the preflight fails unless you pass `--allow-no-verify`.
 
 ```toml
 [loop]
