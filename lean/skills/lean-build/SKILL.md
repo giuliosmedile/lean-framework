@@ -74,7 +74,7 @@ Special stories:
 
 **Decide the route** by writing down three facts:
 - **Intent gaps** — things the user would notice in the result that neither the request nor the code settles. (Choices the user wouldn't notice are yours — decide and record them.)
-- **Irreversibles** — migrations, data deletion/mutation, external side effects, deploy/config triggers.
+- **Irreversibles** — destructive or data-rewriting migrations, data deletion/mutation, external side effects, deploy/config triggers (`lean-kit/SKILL.md` → *Irreversible steps*). An additive migration (new tables, nullable columns or columns with a default, indexes) with a working downgrade is not one: test its downgrade like any other code.
 - **Footprint** — files changed; new things other code will depend on.
 - **Trust boundary** — does it touch auth, personal data, money, secrets, external input, files, shell, or query construction (or does the story's SPEC capability carry such a concern)? If yes, set `security: true`: the security lens joins the review.
 

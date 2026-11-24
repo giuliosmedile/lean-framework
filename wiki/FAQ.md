@@ -51,7 +51,7 @@ The spec checkpoint appears only for open questions, irreversible steps, `checkp
 Your session model is the orchestrator. `implement`, `test`, `review`, `check` and `research` default to a mid tier, `scout` to a low tier. See [Orchestrator and Cost Tiers](Orchestrator-and-Cost-Tiers.md).
 
 **How do I make a small feature cheaper?**
-Keep it to at most three capabilities and no irreversible step: `lean-plan` then writes one epic with one story. Run `lean-intent` and `lean-plan` on the top tier, then `lean-build` and the retro in a mid-tier session. See [The LEAN Process](The-LEAN-Process.md). This cheap profile is experimental: it has been run once, for cost only ([Experiment Results](Experiment-Results.md)).
+Keep it to at most three capabilities and no irreversible step (an additive migration, such as a new table, is fine): `lean-plan` then writes one epic with one story. Run `lean-intent` and `lean-plan` on the top tier, then `lean-build` and the retro in a mid-tier session. See [The LEAN Process](The-LEAN-Process.md). This cheap profile is experimental: it has been run once, for cost only ([Experiment Results](Experiment-Results.md)).
 
 **How do I change a model, or run reviewers on the session model?**
 Edit `_lean/custom/config.user.toml` (personal) or `_lean/custom/config.toml` (team), then run `npx lean-method install --action quick-update`. Reviewers on the session model:

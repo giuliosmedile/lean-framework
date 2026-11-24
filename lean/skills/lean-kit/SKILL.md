@@ -89,9 +89,13 @@ Anything a script can decide, the script decides. Skills run these instead of wo
 
 **Reading the result:** `✖` errors must be fixed (or put to the user) before the step that needed the check; `▲` warnings are reported, not blocking. Never edit a file just to silence a finding you haven't understood. Use `--json` when you need to act on the findings one by one.
 
+## Irreversible steps
+
+A step is **irreversible** when reverting the code would not undo its effect: a migration that drops, renames or narrows something, or adds a constraint that existing rows must meet, or rewrites or deletes existing rows; any other deletion or mutation of data; an external side effect (a message sent to people or third parties, a payment); a deploy or config trigger. An **additive migration** (new tables, new nullable columns or columns with a default, new indexes) with a working downgrade is reversible and does not count. Irreversible steps take a checkpoint and frozen acceptance tests (`lean-build`), and keep a spec out of the cheap profile.
+
 ## Cheap profile: feature-sized work
 
-A spec with at most three capabilities and no irreversible step is built the cheap way. Same checks, fewer sessions and fewer workers:
+A spec with at most three capabilities and no irreversible step (an additive migration is fine) is built the cheap way. Same checks, fewer sessions and fewer workers:
 
 | Step | What | Session model |
 |---|---|---|
@@ -100,7 +104,7 @@ A spec with at most three capabilities and no irreversible step is built the che
 | `lean-build: next story` | small route, tests written with the code, one review of the feature (adversarial + verification-gap, + security at a trust boundary) | **mid** |
 | `lean-change retro` | short retro (one table) | **mid** |
 
-Frozen acceptance tests and a separate `test` worker stay for `security: true` and irreversible steps. A `bad_spec` or `intent_gap` loopback, or a failed implementer, moves the build to the top tier (`orchestration.md` §4). Epics with several stories keep one review at the end of the last story and a security pass on earlier stories that cross a trust boundary (`lean-build` step 4).
+Frozen acceptance tests and a separate `test` worker stay for `security: true` and irreversible steps. A `bad_spec` or `intent_gap` loopback, or a failed implementer, moves the build to the top tier (`orchestration.md` §4). Epics with several stories keep one review at the end of the last story (earlier when the unreviewed diff passes `review.max_diff_lines`) and a security pass on earlier stories that cross a trust boundary (`lean-build` step 4).
 
 ## Every lean skill, on start
 

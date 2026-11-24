@@ -47,7 +47,7 @@ Ids and layout in full: [Artifacts and Layout](Artifacts-and-Layout.md).
 - An epic is a milestone the user can see ("after E2, an analyst can run a search end to end"). Never one epic per technical layer.
 - Fewest epics that deliver the spec, in delivery order, no forward dependencies. The first epic produces something runnable.
 - Every CAP/QR lands in an epic, or under `uncovered:` with a reason.
-- **A feature-sized spec is one epic.** At most three CAPs and no irreversible step (migration, data deletion, deploy trigger): one epic that covers every CAP. The table says so instead of asking; answer `split` to divide it.
+- **A feature-sized spec is one epic.** At most three CAPs and no irreversible step (a destructive migration, data deletion, a deploy trigger; an additive migration with a working downgrade is fine): one epic that covers every CAP. The table says so instead of asking; answer `split` to divide it.
 - You review the whole `epics.yaml` in one pass.
 - Only the first epic gets stories now; the others keep their `EPIC.md` until their turn ("just in time").
 

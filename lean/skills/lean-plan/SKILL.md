@@ -25,7 +25,7 @@ Speak the user's language.
    - **An epic is a milestone the user can see.** "After E2, an analyst can run a search end to end." Never an epic per technical layer.
    - **Fewest epics that deliver the spec**, in delivery order, with no forward dependencies. The first epic produces something runnable end to end.
    - Every CAP/QR lands in an epic, or under `uncovered:` with a reason.
-   - **A feature-sized spec is one epic.** At most three CAPs and no irreversible step (migration, data deletion, deploy trigger): one epic that covers every CAP. Say so in the table instead of asking; the user can answer `split` to divide it.
+   - **A feature-sized spec is one epic.** At most three CAPs and no irreversible step (`lean-kit/SKILL.md` → *Irreversible steps*: a destructive migration, data deletion, a deploy trigger; an additive migration is fine): one epic that covers every CAP. Say so in the table instead of asking; the user can answer `split` to divide it.
 3. **Create the folders.** For each epic, create `epics/<E>-<slug>/EPIC.md` from `assets/epic-template.md` with goal, scope, and exit criterion filled in, `status: planned`.
 4. **Stories just in time.** Detail only the first epic now (go to *Epic*). The rest keep their EPIC.md until they're next. Planning them early just plans churn. If the user asks for every epic at once, do it, epic by epic.
 

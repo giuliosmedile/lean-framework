@@ -6,7 +6,7 @@ You rarely start it. The other skills read its files on start. You invoke it to 
 
 ```
 skills/lean-kit/
-  SKILL.md          config keys, plan layout, CLI contract, the cheap profile, the "when invoked directly" flow
+  SKILL.md          config keys, plan layout, CLI contract, irreversible steps, the cheap profile, the "when invoked directly" flow
   orchestration.md  model tiers, worker roles, spawning, escalation, guardrails, spend log
   kiss.md           engineering rules, document caps, reply shape
 ```
@@ -106,6 +106,7 @@ To re-scout the machine for agents and models without changing anything, run `np
 - **Layout:** `docs/` is input only (LEAN never writes it); everything LEAN writes goes under `plan/`. Both names are the `core.input_folder` and `core.output_folder` keys.
 - **Mechanics are scripts, not tokens:** skills run the plan CLI (`node _lean/bin/lean.js <cmd>`) instead of working things out by reading. `✖` errors must be fixed or put to you; `▲` warnings are reported, not blocking.
 - **Guard hook:** in Claude Code and Codex, a hook can refuse edits to frozen intent. See [Frozen Intent and Guards](Frozen-Intent-and-Guards.md).
+- **Irreversible steps:** one definition for every skill. A revert of the code would not undo them: a destructive or data-rewriting migration, data deletion, an external side effect, a deploy trigger. An additive migration with a working downgrade is not one.
 
 ## See also
 

@@ -62,7 +62,7 @@ Separate **what** (the spec), **how** (the architecture) and **doing** (the buil
 
 Details, flags and the `--auto` unattended mode: [lean-build](lean-build.md).
 
-**Feature-sized work takes the cheap profile.** A spec of at most three capabilities and no irreversible step becomes one epic and one *feature story*, with no team question. Build it on a mid-tier session (the orchestrator's session is the largest line in the bill), on the small route, with tests written alongside the code and one review of the whole feature; the retro is one table. Frozen tests and a separate `test` worker stay for `security: true` and irreversible steps. A `bad_spec` or `intent_gap` loopback, or a failed implementer, moves the build to the top tier.
+**Feature-sized work takes the cheap profile.** A spec of at most three capabilities and no irreversible step (an additive migration such as a new table does not count) becomes one epic and one *feature story*, with no team question. Build it on a mid-tier session (the orchestrator's session is the largest line in the bill), on the small route, with tests written alongside the code and one review of the whole feature; the retro is one table. Frozen tests and a separate `test` worker stay for `security: true` and irreversible steps. A `bad_spec` or `intent_gap` loopback, or a failed implementer, moves the build to the top tier.
 
 **This profile is experimental.** It came out of the cost analysis in [Experiment Results](Experiment-Results.md) and has been run once, on one feature, for cost and time only: its cost fell below BMAD's there, but its quality has not been measured. For work where a missed bug is expensive, use the full process.
 

@@ -33,7 +33,7 @@ Interactively, a dirty tree, a mismatched branch or several shippable goals stop
 
 **Investigation.** `scout` workers map the code (15 bullets or fewer each); the orchestrator opens what it relies on. The spec's `context:` lists what the implementer reads.
 
-**Route.** The orchestrator records intent gaps, irreversibles, footprint and trust boundary. A trust boundary sets `security: true`.
+**Route.** The orchestrator records intent gaps, irreversibles, footprint and trust boundary. Irreversible means a revert of the code would not undo it: a destructive or data-rewriting migration, data deletion, an external side effect, a deploy trigger. An additive migration (new tables, nullable columns or columns with a default, indexes) with a working downgrade is not irreversible. A trust boundary sets `security: true`.
 
 | | Small route | Full route |
 |---|---|---|
