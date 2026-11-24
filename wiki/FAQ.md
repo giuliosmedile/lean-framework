@@ -34,7 +34,7 @@ Ask `lean-help` "what next". It finds specs that are `draft`, `ready`, `in-progr
 ## Review and loops
 
 **Does review run by itself?**
-Inside `lean-build`, yes: blind parallel reviewers after each story (three lenses, plus security at trust boundaries). The standalone [lean-review](lean-review.md) runs only when you say "review". See [Review and Triage](Review-and-Triage.md).
+Inside `lean-build`, yes: blind parallel reviewers, once per feature, after the last story of the epic (adversarial and verification-gap; edge-case when a story ran the full route; security at trust boundaries). Earlier stories of a multi-story epic get only a security pass, and only if they cross a trust boundary. The standalone [lean-review](lean-review.md) runs only when you say "review". See [Review and Triage](Review-and-Triage.md).
 
 **What happens to a finding?**
 The orchestrator verifies it, then routes it: `intent_gap` (back to you), `bad_spec` (wrong approach: revert, fix spec, redo), `amend` (spec missed something: add it, patch), `patch` (fix now), `defer` (to `deferred.md`). False ones are rejected.
@@ -49,6 +49,9 @@ The spec checkpoint appears only for open questions, irreversible steps, `checkp
 
 **Which models does LEAN use?**
 Your session model is the orchestrator. `implement`, `test`, `review`, `check` and `research` default to a mid tier, `scout` to a low tier. See [Orchestrator and Cost Tiers](Orchestrator-and-Cost-Tiers.md).
+
+**How do I make a small feature cheaper?**
+Keep it to at most three capabilities and no irreversible step: `lean-plan` then writes one epic with one story. Run `lean-intent` and `lean-plan` on the top tier, then `lean-build` and the retro in a mid-tier session. See [The LEAN Process](The-LEAN-Process.md).
 
 **How do I change a model, or run reviewers on the session model?**
 Edit `_lean/custom/config.user.toml` (personal) or `_lean/custom/config.toml` (team), then run `npx lean-method install --action quick-update`. Reviewers on the session model:
@@ -106,7 +109,7 @@ Only in the story file's frontmatter: `todo | draft | ready | in-progress | in-r
 | `stories/unlisted-file`, `stories/file-missing` | story file and `stories.yaml` disagree | make them match |
 | `caps/uncovered` | a SPEC capability is in no epic | add to an epic's `caps`, or list under `uncovered:` with a reason |
 | `lanes/no-e0`, `lanes/no-contracts` | 2+ lanes without `<E>-0` or `CONTRACTS.md` | run `lean-plan` on the epic |
-| `story/size` (warning) | build spec over the cap (kiss: about 1,000 tokens) | split, or keep with your OK |
+| `story/size` (warning) | build spec over the cap (kiss: about 1,000 tokens; 2,000 for a feature story, where the warning is accepted) | split, or keep with your OK |
 
 **The guard hook refused an edit.**
 Its message starts `LEAN guard:`. The edit would change a story's `<frozen-after-approval>` block, or a frozen acceptance test while its story is `ready`, `in-progress` or `in-review`. Edit outside the block. If you renegotiated intent: `node _lean/bin/lean.js freeze --story E2-3 --unlock`, edit, freeze again. Don't bypass it with shell edits; `check --story` catches those. See [Frozen Intent and Guards](Frozen-Intent-and-Guards.md).

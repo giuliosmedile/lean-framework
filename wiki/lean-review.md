@@ -34,7 +34,7 @@ If the change has its own account of itself (a build spec, PR description, commi
 
 1. The skill writes the diff to a uniquely named file in the system temp directory.
 2. It announces the content type and lenses in one line.
-3. It launches every lens at once as blind workers, passing file paths, never pasted content. Without subagent support, it runs the lenses one after another in the same session, so they are no longer blind.
+3. It launches every lens at once as blind workers, passing file paths (and the paths of any recorded decisions, which the lenses treat as settled), never pasted content. Without subagent support, it runs the lenses one after another in the same session, so they are no longer blind.
 4. After all report, it triages. For code it verifies each finding, grades it and groups duplicates. For documents it verifies each finding against the doc and its sources, drops false ones and groups duplicates. It does not patch or route anything unless you ask.
 5. It reports.
 
@@ -81,7 +81,7 @@ The skill offers to fix. On yes, it applies patch-grade fixes directly. Anything
 ## See also
 
 - [Review and Triage](Review-and-Triage.md): lenses, evidence rule, routes, loopbacks, log format.
-- [lean-build](lean-build.md): the build step that reviews every story.
+- [lean-build](lean-build.md): the build step that reviews each feature once, at its final story.
 - [Orchestrator and Cost Tiers](Orchestrator-and-Cost-Tiers.md): which tier the `review` and `check` workers run on.
 - [Supported Tools](Supported-Tools.md): which tools give blind parallel review and which fall back to one session.
 - [KISS Style](KISS-Style.md): the reply shape and the over-engineering rules reviewers enforce.

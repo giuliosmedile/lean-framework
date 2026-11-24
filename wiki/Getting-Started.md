@@ -13,8 +13,8 @@ LEAN is not on the npm registry yet. Pack it from a clone and run the installer 
 
 ```bash
 git clone https://github.com/giuliosmedile/lean-framework.git
-cd lean-framework/lean && npm pack         # writes lean-method-0.8.0.tgz (the version in package.json)
-LEAN_PKG="$PWD/lean-method-0.8.0.tgz"      # absolute path: you run npx from another folder
+cd lean-framework/lean && npm pack         # writes lean-method-0.9.0.tgz (the version in package.json)
+LEAN_PKG="$PWD/lean-method-0.9.0.tgz"      # absolute path: you run npx from another folder
 cd /path/to/your-project
 npx --package="$LEAN_PKG" lean-method install
 ```
@@ -100,7 +100,7 @@ node _lean/bin/lean.js next                # nothing ready — plan the next epi
 `status` prints version, tools, style, folders, `role=model` pairs and any installed files you edited:
 
 ```
-LEAN 0.8.0 — installed 2026-11-13T…, updated 2026-11-13T…
+LEAN 0.9.0 — installed 2026-11-13T…, updated 2026-11-13T…
 tools: claude-code   skills: 9   role agents: 6
 style: kiss   input: {project-root}/docs   output: {project-root}/plan   primary: claude-code
   claude-code: scout=haiku · research=sonnet · implement=sonnet · test=sonnet · review=sonnet · check=sonnet

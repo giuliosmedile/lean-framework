@@ -49,7 +49,7 @@ npm test                                      # node --test test/*.test.js
 node --test --test-name-pattern=claims test/plan.test.js   # one test
 ```
 
-Result on Node 22 at 0.8.0: 31 tests, 31 pass, 0 fail, about 9 s. The tests use the built-in `node:test` runner and drive the real CLI against temp directories.
+Result on Node 22 at 0.9.0: 31 tests, 31 pass, 0 fail, about 5 s. The tests use the built-in `node:test` runner and drive the real CLI against temp directories.
 
 - `installer.test.js` (16): scout and tier suggestions, role agents for each tool, install, update, quick-update, uninstall, hooks, and a check that every `` `assets/<file>` `` a skill mentions exists.
 - `plan.test.js` (13): builds a small plan tree, then covers `check`, `next`, `freeze`, `metrics`, `claim`, lane trespass and the guard hook. Needs `git` on the path.
@@ -113,8 +113,8 @@ module.exports = {
 ## Versions and releases
 
 - **One source:** `version` in `lean/package.json`. The installer reads it for `--version`, the install banner and the manifest (`_lean/_config/manifest.yaml`, `installation.version`), which `status` and updates read back.
-- **Not published:** no git tags, no changelog, not on the npm registry. `npm pack --dry-run` shows `lean-method-0.8.0.tgz` (53 files, about 106 kB); the `files` field in `package.json` decides what ships.
-- **Local use:** `npm pack` in `lean/`, then `npx --package=./lean-method-0.8.0.tgz lean-method install`.
+- **Not published:** no git tags, no changelog, not on the npm registry. `npm pack --dry-run` shows `lean-method-0.9.0.tgz` (53 files, about 109 kB); the `files` field in `package.json` decides what ships.
+- **Local use:** `npm pack` in `lean/`, then `npx --package=./lean-method-0.9.0.tgz lean-method install`.
 - **Convention in the history:** a release is one commit titled `LEAN x.y.z: <summary>` that bumps `package.json`, updates README and `guide.md`, and adds tests. The body lists the changes and the test count.
 
 | Version | Commit | Date | Change |
@@ -125,6 +125,7 @@ module.exports = {
 | none | `553544a` | 2026-11-13 | Antigravity CLI (AGY) full support. Version stayed 0.6.0. 26 tests |
 | 0.7.0 | `3323bb7` | 2026-11-13 | Codex full support: `.codex/agents/*.toml`, guard on `apply_patch`, scout detection. 29 tests |
 | 0.8.0 | `0383a2b` | 2026-11-15 | `lean-loop`: unattended story loop whose gates are static checks (status, `check --story`, frozen-test hashes, verification commands, clean commit); `loop.verify` config key; `lean-build` reuses a given claim owner. 31 tests |
+| 0.9.0 | `09955da` | 2026-11-24 | Cheap profile for feature-sized work (at most three CAPs, nothing irreversible): one epic and one feature story with no team question, small route on a mid-tier session, tests written with the code (frozen tests only for `security: true` or an irreversible step), one review of the whole feature (earlier stories of a multi-story epic get a security pass only), reviewers told which decisions are settled, short retro for a one-story epic. Skills and docs only: no CLI change. 31 tests |
 
 ## Maintain this wiki
 

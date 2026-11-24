@@ -1,6 +1,6 @@
 **`npx lean-method` installs LEAN into a project, scouts your coding agents, and keeps the install in sync.**
 
-Package `lean-method` 0.8.0 (binaries `lean-method` and `lean`, Node >= 20.19). It is not on the npm registry yet: run `npm pack` in `lean/`, then `npx --package=./lean-method-0.8.0.tgz lean-method install`. First run: [Getting Started](Getting-Started.md). The same binary also has the plan commands (`check`, `next`, `freeze`, `claim`, `metrics`): see [CLI Plan Tooling](CLI-Plan-Tooling.md).
+Package `lean-method` 0.9.0 (binaries `lean-method` and `lean`, Node >= 20.19). It is not on the npm registry yet: run `npm pack` in `lean/`, then `npx --package=./lean-method-0.9.0.tgz lean-method install`. First run: [Getting Started](Getting-Started.md). The same binary also has the plan commands (`check`, `next`, `freeze`, `claim`, `metrics`): see [CLI Plan Tooling](CLI-Plan-Tooling.md).
 
 | Command | Does | Writes files? |
 |---|---|---|
@@ -84,7 +84,7 @@ Both re-render the role agents from base config plus your `custom/` overrides. F
 Non-interactive runs print the summary to stdout (illustrative):
 
 ```
-Version   0.8.0
+Version   0.9.0
 Tools     Claude Code
 Skills    8 → .claude/skills
 Agents    6 role agents (.claude/agents)
@@ -132,7 +132,7 @@ npx lean-method status [--directory <path>]
 Prints version and dates, tools, counts, `style`, folders, `primary`, the **effective** role → model per tool (all four config layers merged), and installed files you have edited. Illustrative:
 
 ```
-LEAN 0.8.0 — installed 2026-11-13T10:20:02.114Z, updated 2026-11-13T10:22:31.512Z
+LEAN 0.9.0 — installed 2026-11-13T10:20:02.114Z, updated 2026-11-13T10:22:31.512Z
 tools: claude-code   skills: 8   role agents: 6
 style: kiss   input: {project-root}/docs   output: {project-root}/plan   primary: claude-code
   claude-code: scout=haiku · research=sonnet · implement=sonnet · test=sonnet · review=sonnet · check=sonnet

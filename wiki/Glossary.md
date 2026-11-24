@@ -25,10 +25,11 @@
 | Term | Meaning | Detail |
 |---|---|---|
 | Frozen intent | The `<frozen-after-approval>` block of a story. Hashed by `freeze`; changed only if you renegotiate. | [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) |
-| Frozen tests | Acceptance tests written first by a `test` worker, then locked with `freeze --tests`. | [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) |
+| Feature story | The only story of an epic, covering all its CAPs; `lean-plan` writes one for a feature-sized spec (at most three CAPs, nothing irreversible). Small route, build-spec cap doubled. | [lean-plan](lean-plan.md) |
+| Frozen tests | Acceptance tests written first by a `test` worker (only for `security: true` or an irreversible step), then locked with `freeze --tests`. | [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) |
 | Guard hook | A PreToolUse hook (Claude Code, Codex) that refuses edits to frozen intent and frozen tests. | [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) |
 | Claim | An atomic lock on a story, a local git ref. Stops two agents on one clone building the same story. | [CLI: Plan Tooling](CLI-Plan-Tooling.md) |
-| Small route / full route | Small: no gaps, nothing irreversible, small footprint; minimal spec. Full: complete spec, Edge-Case Matrix, tests first. | [lean-build](lean-build.md) |
+| Small route / full route | Small: no gaps, nothing irreversible, a small footprint or a feature story; minimal spec. Full: complete spec, Edge-Case Matrix. | [lean-build](lean-build.md) |
 | Spec checkpoint | The point where `lean-build` asks you to approve a spec. Only when needed. | [lean-build](lean-build.md) |
 | Open Questions | Intent gaps the spec cannot settle. They block coding until you answer. | [lean-build](lean-build.md) |
 | Edge-Case Matrix | Table of edge cases in a full-route spec; every row needs a passing test. | [lean-build](lean-build.md) |

@@ -6,7 +6,7 @@ You rarely start it. The other skills read its files on start. You invoke it to 
 
 ```
 skills/lean-kit/
-  SKILL.md          config keys, plan layout, CLI contract, the "when invoked directly" flow
+  SKILL.md          config keys, plan layout, CLI contract, the cheap profile, the "when invoked directly" flow
   orchestration.md  model tiers, worker roles, spawning, escalation, guardrails, spend log
   kiss.md           engineering rules, document caps, reply shape
 ```

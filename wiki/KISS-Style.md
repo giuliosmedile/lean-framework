@@ -33,6 +33,7 @@ Set `lean.style` in `_lean/config.toml`: `kiss` (default) or `standard`. The ins
 | `UX.md` | 2 pages | as needed |
 | `ARCHITECTURE.md` | ≤ 7 ADs, 2 pages | as needed |
 | Build spec | ≤ 1,000 tokens | ≤ 1,600 tokens |
+| Build spec, feature story (the only story of its epic) | ≤ 2,000 tokens | ≤ 3,200 tokens |
 | Story description | 1 sentence | 2 sentences |
 
 The SPEC tier is the `stakes:` value in its frontmatter (`hobby`, `internal`, `launch`).
@@ -41,7 +42,7 @@ Always: bullets and tables, no paragraph longer than 3 sentences, drop any secti
 
 Enforcement is partial:
 
-- `check` **warns** (never fails) when `SPEC.md` is more than 20% over its page cap (about 500 words a page), or a build spec is over its token cap (words times 4/3). See [CLI Plan Tooling](CLI-Plan-Tooling.md).
+- `check` **warns** (never fails) when `SPEC.md` is more than 20% over its page cap (about 500 words a page), or a build spec is over its token cap (words times 4/3). The script knows the plain cap only: for a feature story its `story/size` warning is accepted up to the doubled cap. See [CLI Plan Tooling](CLI-Plan-Tooling.md).
 - The `UX.md`, AD-count and story-description caps are not checked by a script. The skills apply them while writing (for example `lean-architecture` stays within the AD cap).
 
 ## The reply shape

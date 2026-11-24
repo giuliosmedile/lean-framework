@@ -52,15 +52,17 @@ Separate **what** (the spec), **how** (the architecture) and **doing** (the buil
 `lean-build` is where most of the work happens. In order:
 
 1. **Resolve** what to build: a story id, the next ready story, or a free-form request (saved as `plan/adhoc/<slug>.md`).
-2. **Plan**: investigate the code with cheap `scout` workers, then choose the **small route** (no gaps, nothing irreversible, small footprint) or the **full route** (a complete spec with an Edge-Case Matrix).
+2. **Plan**: investigate the code with cheap `scout` workers, then choose the **small route** (no gaps, nothing irreversible, and a small footprint or a feature story) or the **full route** (a complete spec with an Edge-Case Matrix).
 3. **Checkpoint** (only when needed), then **freeze** the approved intent with a hash.
-4. **Tests first** (full route): a separate `test` worker writes failing acceptance tests; the orchestrator judges them and freezes them too.
+4. **Tests first** (only when the story is `security: true` or a step is irreversible): a separate `test` worker writes failing acceptance tests; the orchestrator judges them and freezes them too. Otherwise the implementer writes the tests with the code.
 5. **Implement**: a fresh-context `implement` worker, with the spec as its only brief.
 6. **Check the diff**, not the worker's report, then run `lean-method check --story <id>` (planned stories only: ad-hoc specs are not in a `stories.yaml`, so only `freeze --file` and the guard hook cover them).
-7. **Review**: three blind reviewers in parallel (a fourth, the security lens, at trust boundaries). The orchestrator verifies each finding and routes it: `intent_gap`, `bad_spec`, `amend`, `patch` or `defer`. See [Review and Triage](Review-and-Triage.md).
+7. **Review**, once per feature, at the final story of the epic: blind reviewers in parallel (adversarial and verification-gap; edge-case when some story ran the full route; the security lens at trust boundaries). The orchestrator verifies each finding and routes it: `intent_gap`, `bad_spec`, `amend`, `patch` or `defer`. See [Review and Triage](Review-and-Triage.md).
 8. **Finish**: a `## How to review` note, the `metrics:` block, `status: done`, a local commit.
 
 Details, flags and the `--auto` unattended mode: [lean-build](lean-build.md).
+
+**Feature-sized work takes the cheap profile.** A spec of at most three capabilities and no irreversible step becomes one epic and one *feature story*, with no team question. Build it on a mid-tier session (the orchestrator's session is the largest line in the bill), on the small route, with tests written alongside the code and one review of the whole feature; the retro is one table. Frozen tests and a separate `test` worker stay for `security: true` and irreversible steps. A `bad_spec` or `intent_gap` loopback, or a failed implementer, moves the build to the top tier.
 
 ## Where you stay in the loop
 

@@ -79,6 +79,8 @@ See [Parallel Teams](Parallel-Teams.md).
 
 Judges the finished work against the evidence it left, not memory. **Every finding cites a source** (file, line, commit, triage-log row, deferred entry); a claim without one is dropped.
 
+**Short retro for a one-story epic.** The orchestrator reads the story's Review Triage Log, Spec Change Log and Implementation Notes, the epic's `deferred.md` and `metrics --epic <E> --json` itself: no `scout` workers, no analysis round. `retro.md` is a one-line verdict (the exit-evidence rule below still applies), one table of at most 8 findings with sources, at most 5 actions and at most 3 pitfalls. Run it in a mid-tier session. A full retro on a one-story epic only when you ask.
+
 1. **Scope.** The epic you name; else the most recent `done` epic, or the active one with every story `done`. Unfinished stories: it says so and asks whether to proceed.
 2. **Gather evidence** with parallel `scout` workers; each digest line carries a source reference, and the orchestrator re-opens the source of any line it turns into a finding. Sources: each story's Review Triage Log, Spec Change Log, `review_loops` and Implementation Notes ([Review and Triage](Review-and-Triage.md)); the epic's `deferred.md`; `git log` and diff stats for the epic's commits; the SPEC capabilities and ADs it covered.
 3. **Analyze** for patterns no single story shows: recurring finding types, loopbacks and amendments, drift from an AD or capability, urgent deferred items, seam problems (multi-lane), complexity creep (`kiss.md` §A), cost and review quality, and whether the epic meets its capabilities' success lines.
