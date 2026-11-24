@@ -26,9 +26,11 @@ Defined in `lean/src/module.yaml`. A flag skips its question; re-installing offe
 | `core.input_folder` | Folder with your source documents | `docs` | `--input-folder` | 1 |
 | `core.output_folder` | Folder for plans and specs | `plan` | `--output-folder` | 1 |
 | `lean.style` | Default working style | `kiss` | `--style` | 1 |
+| `lean.prose` | Wording rules for replies and documents | `plain` | `--set prose=ste80` | 1 |
 
 - Folder answers are stored as `{project-root}/docs`; skills replace `{project-root}`. LEAN reads the input folder and never writes to it. The two folders must differ, and both are created at install. Layout: [Artifacts and Layout](Artifacts-and-Layout.md).
 - `kiss`: simplest code, short docs, replies of 12 lines or fewer. `standard`: same engineering rules, relaxed length caps. See [KISS Style](KISS-Style.md). Values are not validated by the installer.
+- `plain`: no wording rules. `ste80`: simplified technical English, about 80% of ASD-STE100, on top of either style. It is independent of `lean.style`. See [KISS Style](KISS-Style.md#optional-wording-rules-ste80).
 
 ## Orchestration keys
 

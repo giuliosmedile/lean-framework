@@ -1,6 +1,6 @@
 # KISS — build less, say less
 
-Active when the `_lean/` config has `lean.style = "kiss"` (the default). `style: standard` keeps the engineering rules (part A) but relaxes the caps in parts B–C.
+Active when the `_lean/` config has `lean.style = "kiss"` (the default). `style: standard` keeps the engineering rules (part A) but relaxes the caps in parts B–C. `lean.prose = "ste80"` adds the sentence rules of `ste.md` on top of either style; the caps here still win.
 
 ## A. Engineering rules
 

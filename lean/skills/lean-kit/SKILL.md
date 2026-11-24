@@ -9,6 +9,7 @@ Shared rules for all `lean-*` skills, plus the configuration view.
 
 - `orchestration.md` — model tiers, roles, how to spawn workers, escalation, guardrails.
 - `kiss.md` — engineering rules, document caps, user-output shape.
+- `ste.md` — optional wording rules (simplified technical English, ~80%) for replies and documents. Read it only when `lean.prose = "ste80"`.
 
 ## Config
 
@@ -29,6 +30,7 @@ Replace `{project-root}` in values with the project root. Keys:
 | `core.input_folder` | the user's source documents (briefs, PRDs, notes, transcripts, research, mockups) — wherever a skill says `docs/`, use this folder | `{project-root}/docs` |
 | `core.output_folder` | where plans live — wherever a skill says `plan/`, use this folder | `{project-root}/plan` |
 | `lean.style` | `kiss` or `standard` | `kiss` |
+| `lean.prose` | `plain` or `ste80` — wording rules from `ste.md`, independent of `lean.style` | `plain` |
 | `orchestration.roles.<role>` | tier (`top`/`mid`/`low`) or model per worker role | see orchestration.md §2 |
 | `orchestration.tiers.<harness>.<tier>` | model for that tier in that tool | detected (orchestration.md §1) |
 | `orchestration.escalate` | re-run failed workers one tier up | `true` |
@@ -103,6 +105,7 @@ Frozen acceptance tests and a separate `test` worker stay for `security: true` a
 
 1. Read `{skill-root}/../lean-kit/kiss.md` and `{skill-root}/../lean-kit/orchestration.md`.
 2. Read the config above once, and resolve style, language, output folder, and tiers. Don't announce them unless something fell back to `inherit` for a reason the user should know.
+3. If `lean.prose` is `ste80`, read `{skill-root}/../lean-kit/ste.md` and apply it to your replies and to the documents you write. Don't pass it to workers.
 
 ## When invoked directly
 

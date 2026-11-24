@@ -29,7 +29,7 @@ Four files, in order. Later keys win and tables deep-merge:
 | 3 | `_lean/custom/config.toml` | team overrides | never |
 | 4 | `_lean/custom/config.user.toml` | personal overrides (gitignored) | never |
 
-Keys the config view cares about: `lean.style`, `orchestration.roles.<role>`, `orchestration.tiers.<tool>.<tier>`, `orchestration.escalate`. The full key list is on [Configuration](Configuration.md).
+Keys the config view cares about: `lean.style`, `lean.prose`, `orchestration.roles.<role>`, `orchestration.tiers.<tool>.<tier>`, `orchestration.escalate`. The full key list is on [Configuration](Configuration.md).
 
 No `_lean/` folder (skills linked by hand)? Defaults apply and everything still runs.
 
@@ -41,6 +41,7 @@ No `_lean/` folder (skills linked by hand)? Defaults apply and everything still 
 | "set model tiers" | it changes the model behind `mid` or `low` |
 | "run reviewers on my session model" | it sets `orchestration.roles.review = "top"` |
 | "change lean style" | it sets `lean.style` to `kiss` or `standard` |
+| "use simple technical English" | it sets `lean.prose` to `ste80` (`plain` turns it off) |
 
 When invoked directly, `lean-kit`:
 

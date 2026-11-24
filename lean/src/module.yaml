@@ -57,6 +57,15 @@ questions:
       - { value: standard, label: "standard — same engineering rules, relaxed length caps" }
     default: "kiss"
 
+  - key: prose
+    section: lean
+    scope: team
+    prompt: "Wording rules for replies and documents?"
+    options:
+      - { value: plain, label: "plain — no wording rules (default)" }
+      - { value: ste80, label: "ste80 — simplified technical English, ~80%: short active sentences, one term per thing (English text only)" }
+    default: "plain"
+
 directories:
   - "{input_folder}"
   - "{output_folder}"

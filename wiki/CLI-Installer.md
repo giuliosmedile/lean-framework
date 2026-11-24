@@ -32,7 +32,7 @@ npx lean-method install [options]
 | `--git-hook` | Add a git pre-commit hook that runs `check`. |
 | `-y, --yes` | Accept defaults, no prompts. |
 
-`--set` keys: `style=standard` or `lean.style=standard`, `core.project_name=shop`, `orchestration.tiers.claude-code.low=haiku`, `orchestration.roles.review=top`, `orchestration.escalate=false`. Unknown key: error. All keys: [Configuration](Configuration.md).
+`--set` keys: `style=standard` or `lean.style=standard`, `prose=ste80` or `lean.prose=ste80`, `core.project_name=shop`, `orchestration.tiers.claude-code.low=haiku`, `orchestration.roles.review=top`, `orchestration.escalate=false`. Unknown key: error. All keys: [Configuration](Configuration.md).
 
 The run is interactive only when `--yes` is absent and stdin is a terminal. Pipes and CI run non-interactively.
 

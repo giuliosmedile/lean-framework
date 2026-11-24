@@ -141,6 +141,7 @@ Modelled on a real epic (three lanes, a contracts-first story). The plan added w
 - **Engineering:** simplest thing that passes acceptance; reuse before adding; no speculative abstraction, config or dependencies; boring tech; delete before adding. Enforced at review: the adversarial lens hunts `over-engineering:` and triage routes it as a patch.
 - **Documents:** hard length caps (e.g. a ½-page hobby spec, ≤ 7 ADs, ≤ 1,000-token build specs); bullets and tables only.
 - **Talking to you:** ≤ 12 lines per message in one fixed shape (status line → table → numbered questions with lettered options, so you can answer `1a 2b` → `Next:`). No narration.
+- **Optional wording rules:** `lean.prose = "ste80"` (off by default; `--set prose=ste80`) adds simplified technical English, about 80% of ASD-STE100, to replies and documents: short active sentences, condition first, one term per thing. It sits on top of either style, applies to English text only, and never overrides the caps. Rules in `skills/lean-kit/ste.md`.
 - **Dirty ≠ unverified:** KISS cuts polish, never checks. Acceptance, frozen intent, gating of irreversible steps and review all stay.
 
 Minimum path for a small change: `lean-build` alone (freeform intent).

@@ -154,6 +154,8 @@ test('fresh --yes install writes skills, pointers, role agents, config, manifest
   const team = TOML.parse(fs.readFileSync(path.join(root, '_lean/config.toml'), 'utf8'));
   assert.equal(team.core.output_folder, '{project-root}/plan');
   assert.equal(team.lean.style, 'kiss');
+  assert.equal(team.lean.prose, 'plain', 'wording rules are off by default');
+  assert.ok(exists(root, '.claude/skills/lean-kit/ste.md'), 'ste.md ships with lean-kit');
   assert.equal(team.core.user_name, undefined, 'user-scope answers stay out of the team file');
   assert.match(fs.readFileSync(path.join(root, '.claude/agents/lean-scout.md'), 'utf8'), /model: haiku/);
   assert.match(fs.readFileSync(path.join(root, '.opencode/commands/lean-build.md'), 'utf8'), /@skills\/lean-build/);
@@ -176,6 +178,19 @@ test('update keeps answers, backs up edits, drops deselected tools, keeps custom
   const team = TOML.parse(fs.readFileSync(path.join(root, '_lean/config.toml'), 'utf8'));
   assert.equal(team.lean.style, 'standard', 'previous answer kept');
   assert.equal(readMerged(root).lean.style, 'kiss', 'custom override wins in the merged view');
+});
+
+test('--set prose=ste80 is stored in the team file and kept across updates, independent of style', () => {
+  const root = tmp();
+  cli('install', '--directory', root, '--tools', 'claude-code', '--yes', '--no-scout', '--set', 'prose=ste80');
+  const read = () => {
+    const lean = TOML.parse(fs.readFileSync(path.join(root, '_lean/config.toml'), 'utf8')).lean;
+    return [lean.style, lean.prose];
+  };
+  assert.deepEqual(read(), ['kiss', 'ste80']);
+  cli('install', '--directory', root, '--action', 'quick-update', '--yes', '--style', 'standard');
+  assert.deepEqual(read(), ['standard', 'ste80'], 'prose survives an update that changes style');
+  assert.match(cli('install', '--list-options'), /lean\.prose/);
 });
 
 test('quick-update and --set roles regenerate role agents', () => {
