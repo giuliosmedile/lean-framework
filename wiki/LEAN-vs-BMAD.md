@@ -96,7 +96,7 @@ Reviewer-tier and loopback risks show in `node _lean/bin/lean.js metrics --json`
 
 ## Comparison protocol
 
-Question: does LEAN match BMAD's quality for less cost and less of your time? One run is calibration; repeat on two or three features.
+Question: does LEAN match BMAD's quality for less cost and less of your time? One run is calibration; repeat on two or three features. The first full run of this protocol, on three features, is reported in [Experiment Results](Experiment-Results.md).
 
 1. **Pick the feature.** Real, small, new to both runs: 3-6 stories, one epic, one lane. Write a hidden e2e test or demo script first and show it to neither run.
 2. **Hold constant.**
@@ -114,6 +114,7 @@ Question: does LEAN match BMAD's quality for less cost and less of your time? On
 
 ## See also
 
+- [Experiment Results](Experiment-Results.md): what running this protocol found
 - [The LEAN Process](The-LEAN-Process.md): the flow that replaces BMAD's phases
 - [Review and Triage](Review-and-Triage.md): the review model LEAN kept and tightened
 - [CLI: Plan Tooling](CLI-Plan-Tooling.md): `metrics` and the other commands the protocol reads

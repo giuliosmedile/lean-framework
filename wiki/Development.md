@@ -125,7 +125,7 @@ module.exports = {
 | none | `553544a` | 2026-11-13 | Antigravity CLI (AGY) full support. Version stayed 0.6.0. 26 tests |
 | 0.7.0 | `3323bb7` | 2026-11-13 | Codex full support: `.codex/agents/*.toml`, guard on `apply_patch`, scout detection. 29 tests |
 | 0.8.0 | `0383a2b` | 2026-11-15 | `lean-loop`: unattended story loop whose gates are static checks (status, `check --story`, frozen-test hashes, verification commands, clean commit); `loop.verify` config key; `lean-build` reuses a given claim owner. 31 tests |
-| 0.9.0 | `09955da` | 2026-11-24 | Cheap profile for feature-sized work (at most three CAPs, nothing irreversible): one epic and one feature story with no team question, small route on a mid-tier session, tests written with the code (frozen tests only for `security: true` or an irreversible step), one review of the whole feature (earlier stories of a multi-story epic get a security pass only), reviewers told which decisions are settled, short retro for a one-story epic. Skills and docs only: no CLI change. 31 tests |
+| 0.9.0 | `09955da` | 2026-11-24 | Cheap profile for feature-sized work (at most three CAPs, nothing irreversible): one epic and one feature story with no team question, small route on a mid-tier session, tests written with the code (frozen tests only for `security: true` or an irreversible step), one review of the whole feature (earlier stories of a multi-story epic get a security pass only), reviewers told which decisions are settled, short retro for a one-story epic. Skills and docs only: no CLI change. Experimental: run once, for cost and time only ([Experiment Results](Experiment-Results.md)). 31 tests |
 
 ## Maintain this wiki
 

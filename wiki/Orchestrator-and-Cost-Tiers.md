@@ -16,7 +16,7 @@ Cheap workers generate, the expensive model judges. The rules live in `lean-kit/
 
 `orchestration.roles.<role>` overrides any row with a tier name (`top`, `mid`, `low`) or a model string.
 
-**The orchestrator is the largest line in a build's bill**, because every worker report and every diff passes through its context. For feature-sized work (the cheap profile in [The LEAN Process](The-LEAN-Process.md)) run `lean-build` and the retro in a session on the mid-tier model, and keep the top tier for `lean-intent`, `lean-plan` and a `bad_spec` or `intent_gap` loopback.
+**The orchestrator is the largest line in a build's bill**, because every worker report and every diff passes through its context. For feature-sized work (the experimental cheap profile in [The LEAN Process](The-LEAN-Process.md); see [Experiment Results](Experiment-Results.md) for what has been measured) run `lean-build` and the retro in a session on the mid-tier model, and keep the top tier for `lean-intent`, `lean-plan` and a `bad_spec` or `intent_gap` loopback.
 
 ## From tier to model
 
