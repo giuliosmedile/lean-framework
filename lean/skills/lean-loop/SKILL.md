@@ -13,9 +13,9 @@ Speak the user's language. Never push to a remote. You write nothing of your own
 
 **Controller rule.** Every decision below comes from an exit code, a `--json` field, or a status read from a file. If none exists for something you must decide, stop and park the story. Never judge, never "probably fine".
 
-**Arguments:** `--epic <E>`, `--lane <id>` narrow the queue · `--max-stories <n>` (default 3: the loop shares one context; for a fresh context per story use `1` and run it again) · `--stop-on-block` (stop at the first parked story instead of continuing with independent ones) · `--dry-run` (preflight and the next story per lane, nothing claimed or built).
+**Arguments:** `--epic <E>`, `--lane <id>` narrow the queue · `--max-stories <n>` (default 3: the loop shares one context; for a fresh context per story use `1` and run it again) · `--stop-on-block` (stop at the first parked story instead of continuing with independent ones) · `--allow-no-verify` (run without `loop.verify`; the report says so) · `--dry-run` (preflight and the next story per lane, nothing claimed or built).
 
-**Config:** `loop.verify` — a list of shell commands, run from the project root, in `_lean/custom/config.toml`. Project-wide checks (whole test suite, linter). `lean-build` runs only the tests covering what it touched, so without this a story can break a distant test and pass every gate. Unset: say so in the report.
+**Config:** `loop.verify` — a list of shell commands, run from the project root, in `_lean/custom/config.toml`. Project-wide checks (whole test suite, linter). `lean-build` runs only the tests covering what it touched, so without this a story can break a distant test and pass every gate: the preflight refuses to start without it unless the user passed `--allow-no-verify`.
 
 ```toml
 [loop]
@@ -30,10 +30,10 @@ Report the failing line and stop unless all pass. The plan CLI is required: a lo
 |---|---|---|
 | P1 | `lean-method check [--epic E] --json` | `errors` = 0 |
 | P2 | `git status --porcelain`; `git branch --show-current` | empty; a branch (not detached) |
-| P3 | `loop.verify` commands, once | all exit 0. A red baseline would blame every story |
+| P3 | `loop.verify` commands, once | set, and all exit 0. A red baseline would blame every story. Unset passes only with `--allow-no-verify` |
 | P4 | `lean-method next --json` | a `next` entry, or an `inFlight` story we claimed |
 
-Report, don't refuse: whether the guard hook is registered (`_lean/hooks/frozen-guard.js` in `.claude/settings.json` or `.codex/hooks.json`; without it, frozen-intent edits are caught only afterwards, by G2) and whether `loop.verify` is unset.
+Report, don't refuse: whether the guard hook is registered (`_lean/hooks/frozen-guard.js` in `.claude/settings.json` or `.codex/hooks.json`; without it, frozen-intent and contract edits are caught only afterwards, by G2).
 
 **Owner:** `loop-<lane>`, or `loop` without `--lane`. One loop per lane; two loops with the same owner would share claims.
 
@@ -52,7 +52,7 @@ Repeat until a stop rule (§3) fires:
 | # | Gate | Fails when |
 |---|---|---|
 | G1 | `status` in the story file | not `done`. `blocked`: park as is (the reason is written). `in-progress` / `in-review`: the build stopped mid-way, so run step 3 once more (2 attempts per story per run), then park |
-| G2 | `lean-method check --story <id> --json` | any `error`, **or** one of these warnings, which mean a step was skipped: `story/frozen-unhashed`, `story/no-baseline`, `story/no-triage-log`, `story/triage-vocab`, `diff/no-git`. Other warnings (`story/size` …) are reported only |
+| G2 | `lean-method check --story <id> --json` | any `error` (including `story/contract-changed`), **or** one of these warnings, which mean a step was skipped or a record can't be trusted: `story/frozen-unhashed`, `story/contract-unhashed`, `story/no-baseline`, `story/baseline-unknown`, `story/no-triage-log`, `story/triage-vocab`, `story/security-untested`, `diff/no-git`. Other warnings (`story/size` …) are reported only |
 | G3 | each `frozen_tests` entry `path#sha256` in the frontmatter | the file's SHA-256 differs or the file is gone (`check` stops looking once a story is `done`) |
 | G4 | the commands in the story's `## Verification`, run by you | any exits ≠ 0. None listed: nothing to run, report the story as `unverified` |
 | G5 | `loop.verify` | any exits ≠ 0 |
@@ -62,7 +62,7 @@ A failed gate is the finding. Never re-freeze, unlock, edit a test, or revert fi
 
 **Park** = in the story file set `status: blocked` and `blocked_reason: 'lean-loop {gate}: {code or command} — {one line}'`; `lean-method claim --story <id> --release`; commit only that file (`chore({id}): blocked by lean-loop`). A story the build already blocked keeps its own reason: release the claim and commit the file. Code the build already committed stays: never reset, never revert. Resolving is human work: `lean-build <id>` interactively (it reads the reason and asks), or `lean-change course` for a plan or contract problem.
 
-Report without blocking: route `full` with empty `frozen_tests` (tests-first skipped).
+`story/security-untested` parks on purpose: a `security: true` story without frozen acceptance tests may have a good reason (behavior that can't be tested deterministically), but a human accepts it, not the loop.
 
 ## 3. Stop rules
 
@@ -87,7 +87,7 @@ The first that applies; name it in the report.
 | E2-3 | done | 0 | — |
 | E2-5 | blocked | 3 | G2 story/frozen-changed |
 
-guard: {on | off} · verify: {loop.verify | unset} · unverified: {ids}
+guard: {on | off} · verify: {loop.verify | unset (--allow-no-verify)} · unverified: {ids}
 Next: {`lean-build <id>` to resolve · `lean-plan status` + `lean-change retro` · `lean-loop` again}
 ```
 

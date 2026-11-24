@@ -11,7 +11,7 @@
 | CAP-n | A capability in the SPEC: what the product must do, with a testable success line. | [lean-intent](lean-intent.md) |
 | QR-n | A quality requirement in the SPEC. It carries a number, not an adjective. | [lean-intent](lean-intent.md) |
 | UJ-n | A user journey in the SPEC. Only when the product earns one. | [lean-intent](lean-intent.md) |
-| `[ASSUMPTION]` | Tag on every inference the skill made without being told. Listed for you to confirm. | [lean-intent](lean-intent.md) |
+| `[ASSUMPTION]` | Tag on every inference the skill made without being told. Listed for you to confirm. In a story frozen without a checkpoint you never see the list, so reviewers may challenge those lines. | [lean-intent](lean-intent.md) |
 | ARCHITECTURE | `plan/ARCHITECTURE.md`: the module table and the architecture decisions. | [lean-architecture](lean-architecture.md) |
 | AD-n | Architecture decision. Records only what two independently built parts could get wrong. Fields: Binds, Prevents, Rule. | [lean-architecture](lean-architecture.md) |
 | Epic (`E2`) | A milestone the user can see. Has a folder with `EPIC.md` and `stories.yaml`. | [lean-plan](lean-plan.md) |
@@ -25,14 +25,17 @@
 | Term | Meaning | Detail |
 |---|---|---|
 | Frozen intent | The `<frozen-after-approval>` block of a story. Hashed by `freeze`; changed only if you renegotiate. | [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) |
-| Frozen tests | Acceptance tests written first by a `test` worker, then locked with `freeze --tests`. | [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) |
-| Guard hook | A PreToolUse hook (Claude Code, Codex) that refuses edits to frozen intent and frozen tests. | [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) |
+| Contract fields | The story fields frozen with the block: `caps`, `rules`, `seams`, `checkpoint`, `security`, `frozen_tests`, `approved_via`. Hashed into `contract_sha256`. | [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) |
+| `approved_via` | `checkpoint`: you saw the frozen block. `plan`: you approved only the plan stub, and the agent wrote the rest. Written by `freeze --via`. | [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) |
+| Feature story | The only story of an epic, covering all its CAPs; `lean-plan` writes one for a feature-sized spec (at most three CAPs, nothing irreversible). Small route, build-spec cap doubled. | [lean-plan](lean-plan.md) |
+| Frozen tests | Acceptance tests written first by a `test` worker (only for `security: true` or an irreversible step), then locked with `freeze --tests`. | [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) |
+| Guard hook | A PreToolUse hook (Claude Code, Codex) that refuses edits to frozen intent, frozen contract fields, a `baseline_commit` already set, and frozen tests. | [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) |
 | Claim | An atomic lock on a story, a local git ref. Stops two agents on one clone building the same story. | [CLI: Plan Tooling](CLI-Plan-Tooling.md) |
-| Small route / full route | Small: no gaps, nothing irreversible, small footprint; minimal spec. Full: complete spec, Edge-Case Matrix, tests first. | [lean-build](lean-build.md) |
+| Small route / full route | Small: no gaps, nothing irreversible, a small footprint or a feature story; minimal spec. Full: complete spec, Edge-Case Matrix. | [lean-build](lean-build.md) |
 | Spec checkpoint | The point where `lean-build` asks you to approve a spec. Only when needed. | [lean-build](lean-build.md) |
 | Open Questions | Intent gaps the spec cannot settle. They block coding until you answer. | [lean-build](lean-build.md) |
 | Edge-Case Matrix | Table of edge cases in a full-route spec; every row needs a passing test. | [lean-build](lean-build.md) |
-| `baseline_commit` | The commit a build started from. `check --story` measures the diff against it. | [CLI: Plan Tooling](CLI-Plan-Tooling.md) |
+| `baseline_commit` | The commit a build started from, written once. `check --story` measures the diff against it. | [CLI: Plan Tooling](CLI-Plan-Tooling.md) |
 | Lens | One reviewer's brief: `adversarial`, `edge-case`, `verification-gap`, `security`, `doc-rubric`. | [Review and Triage](Review-and-Triage.md) |
 | Blind review | Reviewers see only the lens and the content, never the conversation or each other. | [Review and Triage](Review-and-Triage.md) |
 | Triage | The orchestrator verifies each finding, then routes it. Never delegated. | [Review and Triage](Review-and-Triage.md) |

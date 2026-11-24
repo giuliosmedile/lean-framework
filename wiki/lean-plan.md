@@ -47,6 +47,7 @@ Ids and layout in full: [Artifacts and Layout](Artifacts-and-Layout.md).
 - An epic is a milestone the user can see ("after E2, an analyst can run a search end to end"). Never one epic per technical layer.
 - Fewest epics that deliver the spec, in delivery order, no forward dependencies. The first epic produces something runnable.
 - Every CAP/QR lands in an epic, or under `uncovered:` with a reason.
+- **A feature-sized spec is one epic.** At most three CAPs and no irreversible step (migration, data deletion, deploy trigger): one epic that covers every CAP. The table says so instead of asking; answer `split` to divide it.
 - You review the whole `epics.yaml` in one pass.
 - Only the first epic gets stories now; the others keep their `EPIC.md` until their turn ("just in time").
 
@@ -77,6 +78,7 @@ epics:
 - `stories.yaml` keeps order and structure only. It has no status and no requirement text.
 - Each story file is a stub: frontmatter, one sentence, Given/When/Then acceptance. [lean-build](lean-build.md) grows the same file into the build spec.
 - **Stories point, they do not copy.** `caps` holds CAP-/QR-/UJ- ids and `rules` holds AD ids; the text stays in SPEC and ARCHITECTURE.
+- A feature-sized epic is **one story**, the *feature story*: it claims every CAP of the epic and its build-spec cap is twice the plain one. Split only along a real seam (an irreversible step that wants its own checkpoint, or a CAP that needs a different security treatment).
 - Rules: fewest stories that deliver the epic; thin vertical slices; one user-facing goal each, small enough for the build-spec cap (kiss: 1,000 tokens); no forward dependencies in a lane; every claimed CAP covered. You review the list in one pass.
 - `checkpoint: spec` goes on risky, irreversible or ambiguous stories (and `<E>-0`). Default `none`.
 
@@ -136,7 +138,7 @@ Frontmatter written by `lean-plan`: `id`, `title`, `epic`, `lane`, `caps`, `rule
 
 ## The headcount question
 
-Before drawing stories, `lean-plan` always asks, in one message:
+Before drawing stories, `lean-plan` asks, in one message (not for a feature-sized epic: it records `One person, one agent, single lane` under `## Team` and says so in the stories table; answer `team` to be asked):
 
 1. How many people or parallel agents work on this epic at the same time?
 2. If more than one: names, ownership split, integration branch, merge cadence.

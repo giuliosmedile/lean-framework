@@ -1,4 +1,4 @@
-**LEAN - LEAN Eliminates Agent Noise.** A streamlined, orchestrator-first method for building software with AI coding agents. This wiki explains the process, every skill, every command and the ideas behind them. It describes LEAN **0.8.0**.
+**LEAN - LEAN Eliminates Agent Noise.** A streamlined, orchestrator-first method for building software with AI coding agents. This wiki explains the process, every skill, every command and the ideas behind them. It describes LEAN **0.10.0**.
 
 ## What LEAN is
 
@@ -7,7 +7,7 @@ Nine skills, a plan CLI and an installer. You install them into a project and ta
 1. asks what you want and writes it down (`lean-intent`);
 2. records only the design decisions that matter (`lean-architecture`);
 3. breaks the work into small stories (`lean-plan`);
-4. builds each story from a frozen spec, tests first, reviewed by independent reviewers (`lean-build`);
+4. builds each story from a frozen spec, with its tests, and has independent reviewers check the finished feature (`lean-build`);
 5. handles change and closes epics against evidence (`lean-change`).
 
 Everything passes between steps as files on disk, so any step can run in a fresh session.
@@ -55,8 +55,9 @@ LEAN is derived from the BMAD method, keeps its backbone (what / how / doing, fi
 - [Configuration](Configuration.md): the `_lean/` config layers.
 - [Supported Tools](Supported-Tools.md): Claude Code, Codex, OpenCode, Antigravity CLI and the rest.
 - [Glossary](Glossary.md): CAP, QR, AD, lane, seam, frozen, triage…
+- [Experiment Results](Experiment-Results.md): LEAN against BMAD on three features, and what `lean-lite` has and has not shown.
 - [Development](Development.md): repository layout, tests, contributing.
 
 ## Status
 
-LEAN is an experiment: can the BMAD method be streamlined without losing its core? It is not on the npm registry yet. The [comparison protocol](LEAN-vs-BMAD.md#comparison-protocol) says how to measure it.
+LEAN is an experiment: can the BMAD method be streamlined without losing its core? It is not on the npm registry yet. The [comparison protocol](LEAN-vs-BMAD.md#comparison-protocol) says how to measure it, and [Experiment Results](Experiment-Results.md) reports the first run: same quality as BMAD, higher cost for 0.8.0, inconclusive overall. The cheap profile (`lean-lite`, 0.9.0) came out of that result and is not yet fully tested.

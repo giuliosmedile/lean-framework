@@ -32,14 +32,14 @@ orchestrator: verify ─► grade ─► group ─► route ─► act and log
 
 ## Blind and parallel
 
-- A reviewer gets its lens file, the content path and optional `also_consider` areas. It never sees the build conversation, the implementer's report or other reviewers' findings. Edge-case also gets the claims path, unread until its instructions call for it.
+- A reviewer gets its lens file, the content path, optional `also_consider` areas and the paths of the recorded decisions (SPEC Assumptions and Decision Log, epic and story decisions), which it must not re-argue as preferences. Story lines tagged `[ASSUMPTION]` are open to challenge, and a decision that produces a concrete wrong result is reported as `decision-conflict:` with the input and the wrong output. It never sees the build conversation, the implementer's report or other reviewers' findings. Edge-case also gets the claims path, unread until its instructions call for it.
 - All lenses launch in one turn. Triage starts only after all have reported.
 - Reviewers' severity labels are ignored: they lack the context to grade. A cheaper tier works because the orchestrator verifies each finding ([tiers](Orchestrator-and-Cost-Tiers.md)).
 - No subagents: `lean-review` runs the lenses one after another in one session. `lean-build` writes the prompts to `plan/adhoc/review-prompts/` and halts so you can run them in separate sessions.
 
 ## When the security lens is added
 
-- Build: the spec has `security: true` (set in planning when the story touches auth, personal data, money, secrets, external input, files, shell or query construction), or the diff crosses a trust boundary.
+- Build: the spec has `security: true` (set in planning when the story touches auth, personal data, money, secrets, external input, files, shell or query construction), or the diff crosses a trust boundary. On a feature review, any story of the epic with `security: true` is enough; an earlier story of a multi-story epic gets this lens alone, on its own diff.
 - Standalone: the diff touches one of those. Never on documents.
 
 ## The evidence rule
@@ -52,7 +52,13 @@ A finding without evidence is a hunch, and a hunch costs the judge a check.
 
 ## Verify, then route
 
-Triage is the orchestrator's job, never a worker's. For each finding:
+Triage is the orchestrator's job, never a worker's. **Settled decisions first.** A decision is settled when a human has seen it: the SPEC's Assumptions and Decision Log, the epic's decisions, a story's frozen block. Not settled: the `[ASSUMPTION]` lines of a story frozen with `approved_via: plan`, which the orchestrator wrote during the build and no human saw ([Frozen Intent and Guards](Frozen-Intent-and-Guards.md#who-approved-it)).
+
+- A finding that only re-argues a settled decision takes verdict `false`, route `reject`, evidence `decided: <where it is recorded>`, with no code reading.
+- A `decision-conflict:` finding, or one that names a concrete bad outcome the record does not mention: verify it like any other; if it is real, route it `intent_gap`, because the decision may be what is wrong.
+- A finding against an unsettled `[ASSUMPTION]` line: verify it on the merits; if it is real, route `amend` (the orchestrator corrects its own line and freezes again) or `bad_spec` when the approach rests on it.
+
+For every other finding:
 
 1. **Check the claim.** Open the location and read past the changed lines (callers, upstream guards) until you know whether the bad outcome happens. Code that fails loudly on a state nobody showed to be reachable is correct.
 2. **Give one verdict.**

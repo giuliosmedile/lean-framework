@@ -10,11 +10,13 @@ Cheap workers generate, the expensive model judges. The rules live in `lean-kit/
 | `scout` | repo sweeps, source-doc extraction, retro evidence | low | Haiku | yes |
 | `research` | web research digests | mid | Sonnet | yes |
 | `implement` | build the code from a frozen spec | mid | Sonnet | no |
-| `test` | acceptance tests before implementation (full route) | mid | Sonnet | no |
+| `test` | acceptance tests before implementation (only `security: true` or an irreversible step) | mid | Sonnet | no |
 | `review` | adversarial, edge-case, verification-gap lenses | mid | Sonnet | yes |
 | `check` | doc rubric, readiness check | mid | Sonnet | yes |
 
 `orchestration.roles.<role>` overrides any row with a tier name (`top`, `mid`, `low`) or a model string.
+
+**The orchestrator is the largest line in a build's bill**, because every worker report and every diff passes through its context. For feature-sized work (the experimental cheap profile in [The LEAN Process](The-LEAN-Process.md); see [Experiment Results](Experiment-Results.md) for what has been measured) run `lean-build` and the retro in a session on the mid-tier model, and keep the top tier for `lean-intent`, `lean-plan` and a `bad_spec` or `intent_gap` loopback.
 
 ## From tier to model
 

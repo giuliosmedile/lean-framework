@@ -33,6 +33,7 @@ Set `lean.style` in `_lean/config.toml`: `kiss` (default) or `standard`. The ins
 | `UX.md` | 2 pages | as needed |
 | `ARCHITECTURE.md` | ≤ 7 ADs, 2 pages | as needed |
 | Build spec | ≤ 1,000 tokens | ≤ 1,600 tokens |
+| Build spec, feature story (the only story of its epic) | ≤ 2,000 tokens | ≤ 3,200 tokens |
 | Story description | 1 sentence | 2 sentences |
 
 The SPEC tier is the `stakes:` value in its frontmatter (`hobby`, `internal`, `launch`).
@@ -41,7 +42,7 @@ Always: bullets and tables, no paragraph longer than 3 sentences, drop any secti
 
 Enforcement is partial:
 
-- `check` **warns** (never fails) when `SPEC.md` is more than 20% over its page cap (about 500 words a page), or a build spec is over its token cap (words times 4/3). See [CLI Plan Tooling](CLI-Plan-Tooling.md).
+- `check` **warns** (never fails) when `SPEC.md` is more than 20% over its page cap (about 500 words a page), or a build spec is over its token cap (words times 4/3). For a feature story it applies the doubled cap. See [CLI Plan Tooling](CLI-Plan-Tooling.md).
 - The `UX.md`, AD-count and story-description caps are not checked by a script. The skills apply them while writing (for example `lean-architecture` stays within the AD cap).
 
 ## The reply shape
@@ -96,6 +97,26 @@ KISS cuts polish, not checks. These stay on in every style:
 - Review still runs.
 
 A quick-and-plain implementation is fine. An unchecked one is not. See [Review and Triage](Review-and-Triage.md) and [Frozen Intent and Guards](Frozen-Intent-and-Guards.md).
+
+## Optional wording rules: ste80
+
+`kiss` and `standard` set how much LEAN writes. `lean.prose` sets how each sentence is written. It is a separate key, so it combines with either style.
+
+| `lean.prose` | Effect |
+|---|---|
+| `plain` (default) | No wording rules. |
+| `ste80` | Replies and documents follow `lean-kit/ste.md`: simplified technical English, about 80% of ASD-STE100. |
+
+Turn it on with `--set prose=ste80` at install, or `[lean] prose = "ste80"` in `_lean/custom/config.toml` followed by `install --action quick-update`.
+
+- **Kept:** sentences of at most 20 words (procedures) or 25 (descriptions), one idea per sentence, active voice, the condition first, simple tenses, one term per thing, no `-ing` verbs, no noun stacks over three.
+- **Not enforced:** the approved-word dictionary of about 900 words.
+- **Applies to** replies to you and to documents you read (SPEC, UX, ARCHITECTURE, EPIC, story intent, retros, review reports).
+- **Does not apply to** worker prompts, code, ids, status words, quoted source text, or text already inside a frozen block (rewriting it would break the hash).
+- **English only.** For another language only the sentence and paragraph rules apply, not the word rules.
+- **The caps win.** If a rule would push a reply past 12 lines or a document past its cap, the cap stands.
+
+The idea comes from asking an LLM to write in the controlled English of aircraft manuals so a person can review the output faster. It makes text easier to read; it is not shown to make the model's code better. Treat it as an experiment and compare cost with `lean-method metrics` before you make it a team default.
 
 ## How reviewers enforce it
 

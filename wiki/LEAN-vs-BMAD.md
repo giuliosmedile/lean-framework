@@ -1,4 +1,4 @@
-**LEAN is BMAD v6.12.4 with the overhead removed: same backbone, 8 skills instead of 29, 5x to 9x fewer instruction words depending on how you count.** This is the only page that assumes you know BMAD.
+**LEAN is BMAD v6.12.4 with the overhead removed: same backbone, 9 skills instead of 29, 5x to 9x fewer instruction words depending on how you count.** This is the only page that assumes you know BMAD.
 
 ## Why LEAN exists
 
@@ -20,7 +20,7 @@ LEAN removes noise: instruction text the agent reads on every run that does not 
 | customize | `lean-kit` | Config view, overrides in `_lean/custom/`, shared rules. |
 | project-context | `lean-change` retro | At most 3 evidence-backed pitfalls per retro for `AGENTS.md`/`CLAUDE.md`. |
 | walkthrough | `lean-build` | A `## How to review` note (5 bullets max) in the story file. |
-| qa-generate-e2e-tests | `lean-build` | A `test` worker writes acceptance tests first; they are frozen. |
+| qa-generate-e2e-tests | `lean-build` | When a story has `security: true` or an irreversible step, a `test` worker writes acceptance tests first and they are frozen; otherwise the implementer writes them with the code. |
 | 5 personas, party-mode, advanced-elicitation, brainstorming, deep-recon | none | Dropped. |
 
 ## What was cut, and why
@@ -43,7 +43,7 @@ LEAN removes noise: instruction text the agent reads on every run that does not 
 4. Implementation by a fresh subagent with the spec as sole source of truth.
 5. Three blind parallel reviewers (plus a security lens at trust boundaries) and verify-then-route triage with loopback. See [Review and Triage](Review-and-Triage.md).
 6. Readiness check before building; deferred-work log; a path for mid-flight change.
-7. Acceptance tests written first by a separate worker, frozen and enforced (0.6.0).
+7. Acceptance tests written first by a separate worker, frozen and enforced (0.6.0; since 0.9.0 only for `security: true` or an irreversible step).
 8. An epic is accepted only on recorded exit evidence: an e2e test or a demo you watched (0.6.0).
 
 ## Measured size
@@ -96,7 +96,7 @@ Reviewer-tier and loopback risks show in `node _lean/bin/lean.js metrics --json`
 
 ## Comparison protocol
 
-Question: does LEAN match BMAD's quality for less cost and less of your time? One run is calibration; repeat on two or three features.
+Question: does LEAN match BMAD's quality for less cost and less of your time? One run is calibration; repeat on two or three features. The first full run of this protocol, on three features, is reported in [Experiment Results](Experiment-Results.md).
 
 1. **Pick the feature.** Real, small, new to both runs: 3-6 stories, one epic, one lane. Write a hidden e2e test or demo script first and show it to neither run.
 2. **Hold constant.**
@@ -114,6 +114,7 @@ Question: does LEAN match BMAD's quality for less cost and less of your time? On
 
 ## See also
 
+- [Experiment Results](Experiment-Results.md): what running this protocol found
 - [The LEAN Process](The-LEAN-Process.md): the flow that replaces BMAD's phases
 - [Review and Triage](Review-and-Triage.md): the review model LEAN kept and tightened
 - [CLI: Plan Tooling](CLI-Plan-Tooling.md): `metrics` and the other commands the protocol reads

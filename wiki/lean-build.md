@@ -7,10 +7,10 @@ Your session model is the orchestrator: it routes, writes the spec, judges the d
 ```
 1 RESOLVE   story id | "next story" | freeform ──▶ one spec file
 2 PLAN      scout ─▶ route (small | full) ─▶ [checkpoint?] ─▶ freeze
-            full route: test worker ─▶ judge tests ─▶ freeze --tests
+            security: true or irreversible step: test worker ─▶ judge tests ─▶ freeze --tests
 3 IMPLEMENT fresh implement worker ─▶ judge the diff ─▶ matrix audit
             ─▶ Verification commands ─▶ check --story
-4 REVIEW    3-4 blind reviewers in parallel ─▶ you triage ─▶ route
+4 REVIEW    final story only: 2-4 blind reviewers on the whole feature ─▶ you triage ─▶ route
               intent_gap ──▶ back to 2     bad_spec ──▶ back to 3
               amend / patch ──▶ fix in place     defer ──▶ deferred.md
 5 FINISH    ## How to review ─▶ metrics ─▶ done ─▶ commit ─▶ report
@@ -37,12 +37,14 @@ Interactively, a dirty tree, a mismatched branch or several shippable goals stop
 
 | | Small route | Full route |
 |---|---|---|
-| When | no gaps, nothing irreversible, small footprint | anything else |
+| When | no gaps, nothing irreversible, and a small footprint or a feature story | anything else |
 | Spec | frontmatter, Intent (frozen), Implementation Notes | adds Boundaries, Edge-Case Matrix, Open Questions, Code Map, Tasks, Verification |
-| Checkpoint, tests-first | skipped | yes |
-| Reviewers | adversarial, verification-gap if behavior changed | adversarial, edge-case, verification-gap |
+| Checkpoint | skipped | yes |
+| Reviewers (final story) | adversarial, verification-gap if behavior changed | adversarial, edge-case, verification-gap |
 
 The security lens joins either route on `security: true` or a diff that crosses a trust boundary. A small build that hits a gap, an irreversible step or growing scope switches to full and returns to step 2. The `kiss` spec cap is 1,000 tokens; over it, `check` warns `story/size` and the skill proposes a split ([KISS Style](KISS-Style.md)).
+
+A **feature story** is the only story of its epic and covers all of the epic's capabilities (`lean-plan` writes one for a feature-sized spec). It takes the small route whatever its footprint, and its spec cap is twice the plain one (`check` applies the doubled cap to it).
 
 **Checkpoint (conditional).** You are asked only if one of these holds:
 - Open Questions exist.
@@ -50,16 +52,16 @@ The security lens joins either route on `security: true` or a diff that crosses 
 - The story says `checkpoint: spec`.
 - The work is ad-hoc and full route.
 
-All questions come at once, numbered, with options; each answer goes into the frozen block as a decision. You then pick: approve and continue, approve and stop, or review first. With no trigger, the intent was approved during planning: the spec goes to `status: ready` unasked.
+All questions come at once, numbered, with options; each answer goes into the frozen block as a decision. You then pick: approve and continue, approve and stop, or review first. With no trigger, only the plan stub was approved during planning: the spec goes to `status: ready` unasked, and every frozen line the orchestrator wrote beyond the stub, the SPEC, an AD or a human answer ends with `[ASSUMPTION]`. Reviewers may challenge those lines; a real finding against one is corrected by the orchestrator (`amend`), not escalated ([Review and Triage](Review-and-Triage.md)).
 
-**Freeze.** `freeze --story <id>` (`--file <spec>` for ad-hoc) hashes the frozen block; run it again after any renegotiation ([Frozen Intent and Guards](Frozen-Intent-and-Guards.md)).
+**Freeze.** `freeze --story <id> --via checkpoint|plan` (`--file <spec>` for ad-hoc) hashes the frozen block and the contract fields (`caps`, `rules`, `seams`, `checkpoint`, `security`, `frozen_tests`, `approved_via`) and records whether a human saw the block; run it again after any renegotiation ([Frozen Intent and Guards](Frozen-Intent-and-Guards.md)).
 
-**Tests first (full route).** A `test` worker writes failing tests for every Acceptance line and Matrix row. The orchestrator checks that each asserts behavior and fails for the right reason, then runs `freeze --story <id> --tests <f1,f2>`. Skipped if behavior can't be tested deterministically (reason in Implementation Notes).
+**Tests first (only when `security: true` or a step is irreversible, on either route).** A `test` worker writes failing tests for every Acceptance line and Matrix row. The orchestrator checks that each asserts behavior and fails for the right reason, then runs `freeze --story <id> --tests <f1,f2>`. Skipped if behavior can't be tested deterministically (reason in Implementation Notes). In every other story there are no frozen tests: the implementer writes the tests with the code, one per Acceptance line and Matrix row.
 
 ## 3. Implement
 
 1. Record `baseline_commit` (HEAD, or `NO_VCS`); set `status: in-progress` and `metrics.started`.
-2. **Full route:** a fresh-context `implement` worker gets the spec path and a fixed prompt, nothing else; it never edits the frozen tests. **Small route:** the orchestrator implements. A failed worker is re-run once a tier up.
+2. **Full route:** a fresh-context `implement` worker gets the spec path and a fixed prompt, nothing else; it never edits the frozen tests. **Small route:** the orchestrator implements. With no `frozen_tests` it writes the tests with the code. A failed worker is re-run once a tier up.
 3. The orchestrator reads the diff since `baseline_commit`, not the worker's report.
 4. **Matrix audit:** every Matrix row needs a test that ran and passed. A skipped test counts as missing. If code and matrix disagree, the code changes.
 5. Run the Verification commands.
@@ -76,6 +78,10 @@ If the implementer reports a frozen test is wrong, the orchestrator judges it. A
 `check --story` needs an id from `stories.yaml`, so ad-hoc specs can't use it; they rely on the guard hook and the diff read.
 
 ## 4. Review and loopbacks
+
+**The feature is reviewed once, not every story.** A story is *final* when it is ad-hoc work, or when no other story of its epic is still open (`todo`, `draft`, `ready`, `in-progress`, `blocked`); a feature story is always final. The final story is reviewed on the whole diff since the first story's `baseline_commit`. An earlier story of a multi-story epic gets only the security lens, and only if it has `security: true` or crosses a trust boundary; otherwise its Review Triage Log holds one line, `Deferred to <final story id>`.
+
+On a feature review the lenses are adversarial, verification-gap if behavior changed, edge-case only if some story of the epic ran the full route, and security if any story has `security: true` or the diff crosses a trust boundary. Each reviewer also gets the paths of the recorded decisions (the SPEC's Assumptions and Decision Log, the epic's and stories' decisions) and is told they are settled.
 
 Context-free `review` workers launch together. The orchestrator triages every finding itself, one Review Triage Log row each ([Review and Triage](Review-and-Triage.md)).
 

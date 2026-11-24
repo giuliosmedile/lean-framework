@@ -25,6 +25,7 @@ Speak the user's language.
    - **An epic is a milestone the user can see.** "After E2, an analyst can run a search end to end." Never an epic per technical layer.
    - **Fewest epics that deliver the spec**, in delivery order, with no forward dependencies. The first epic produces something runnable end to end.
    - Every CAP/QR lands in an epic, or under `uncovered:` with a reason.
+   - **A feature-sized spec is one epic.** At most three CAPs and no irreversible step (migration, data deletion, deploy trigger): one epic that covers every CAP. Say so in the table instead of asking; the user can answer `split` to divide it.
 3. **Create the folders.** For each epic, create `epics/<E>-<slug>/EPIC.md` from `assets/epic-template.md` with goal, scope, and exit criterion filled in, `status: planned`.
 4. **Stories just in time.** Detail only the first epic now (go to *Epic*). The rest keep their EPIC.md until they're next. Planning them early just plans churn. If the user asks for every epic at once, do it, epic by epic.
 
@@ -36,7 +37,9 @@ Speak the user's language.
 
 Read `epics.yaml`, this epic's `EPIC.md`, the SPEC capabilities it covers, ARCHITECTURE.md, and the `stories.yaml` and story files of epics this one depends on (titles and status only). If the epic already has stories, this is a refresh: keep every story file whose status isn't `todo`, and keep the ids of all existing files.
 
-### 2. Ask about the team (always, one message)
+### 2. Ask about the team (one message; not for a feature-sized epic)
+
+**Feature-sized epic** (see *Epics* step 2): don't ask. Record `One person, one agent, single lane` under `## Team` in EPIC.md and say so in the stories table; the user can answer `team` to be asked.
 
 1. **How many people (or parallel agents) will work on this epic at the same time?**
 2. If more than one: their names or handles, and any ownership or skill split.
@@ -91,7 +94,8 @@ Write `stories.yaml` from `assets/stories-template.yaml`, and one file per story
 Story rules:
 
 - **Fewest stories that deliver the epic.** Thin vertical slices; the first story (or the walking skeleton) produces something runnable. Don't split what one build spec can hold.
-- **One user-facing goal per story**, small enough that its build spec fits the cap in `kiss.md` §B.
+- **A feature-sized epic is one story** (the *feature story*): it covers every CAP the epic claims. Don't split it to fit the build-spec cap: a feature story's cap is twice the plain one (`kiss.md` §B). Split only along a real seam: an irreversible step that wants its own checkpoint, or a CAP that needs a different security treatment from the rest.
+- **One user-facing goal per story**, small enough that its build spec fits the cap in `kiss.md` §B (a feature story: twice the cap).
 - **User value, not layers** (single lane). In multi-lane epics, lane stories may be module-shaped, but each must be testable on its own against fakes and fixtures.
 - **No forward dependencies** within a lane. Cross-lane and cross-epic dependencies are allowed but explicit in `depends_on`.
 - The story file holds the story's own acceptance criteria (Given/When/Then, error cases that matter), `caps`, `rules`, and `seams`. A seam story's acceptance includes "the contract tests for those seams pass".

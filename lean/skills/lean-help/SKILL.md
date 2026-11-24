@@ -13,7 +13,7 @@ Three jobs, picked from the request:
 | asks where they are or what's next | **orient** — read the project state, recommend the next step |
 | asks how LEAN or a procedure works | **explain** — answer from `guide.md` and the skill files |
 
-**On start:** read the `_lean/` config as described in `{skill-root}/../lean-kit/SKILL.md` → *Config* (language, output folder, style). Don't load `orchestration.md`; this skill spawns no workers. Every message uses the kiss shape from `{skill-root}/../lean-kit/kiss.md` §C.
+**On start:** read the `_lean/` config as described in `{skill-root}/../lean-kit/SKILL.md` → *Config* (language, output folder, style). Don't load `orchestration.md`; this skill spawns no workers. Every message uses the kiss shape from `{skill-root}/../lean-kit/kiss.md` §C, and follows `ste.md` when `lean.prose` is `ste80`.
 
 ## Catalog
 

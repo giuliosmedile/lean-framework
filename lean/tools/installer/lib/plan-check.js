@@ -6,9 +6,9 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const { STORY_STATUS, EPIC_STATUS, IN_FLIGHT, section, stripComments, frozenBlock, sha256, statusOf } = require('./plan');
+const { STORY_STATUS, EPIC_STATUS, IN_FLIGHT, section, stripComments, frozenBlock, sha256, statusOf, CONTRACT_KEYS, APPROVED_VIA, contractHash } = require('./plan');
 const { triageRows, VERDICTS, ROUTES } = require('./metrics');
-const { listClaims } = require('./claims');
+const { listClaims, hasGit } = require('./claims');
 
 const STORY_ID = /^E\d+-(?:\d+|C\d+)$/;
 const EPIC_ID = /^E\d+$/;
@@ -210,19 +210,32 @@ function checkStoryFile(plan, e, s, add, adsKnown) {
 
   // grown into a build spec?
   if (fm.route === 'full' || fm.route === 'small') {
-    const cap = SPEC_CAP_TOKENS[plan.style] || SPEC_CAP_TOKENS.kiss;
+    // a feature story (the epic's only story, covering all its caps) may run to twice the cap: lean-build → Small route
+    const live = e.stories.filter((x) => statusOf(x) !== 'retired');
+    const feature = live.length === 1 && live[0] === s && asList(e.caps).every((c) => asList(fm.caps).includes(c));
+    const cap = (SPEC_CAP_TOKENS[plan.style] || SPEC_CAP_TOKENS.kiss) * (feature ? 2 : 1);
     const tokens = specTokens(s);
-    if (tokens > cap) add('warn', 'story/size', where, `build spec ≈${tokens} tokens > ${plan.style} cap ${cap} — split, or keep with the user's OK`);
+    if (tokens > cap) add('warn', 'story/size', where, `build spec ≈${tokens} tokens > ${plan.style} cap ${cap}${feature ? ' (feature story: doubled)' : ''} — split, or keep with the user's OK`);
   }
 
   // frozen intent
   const block = frozenBlock(s.text);
+  const hashed = ['ready', 'in-progress', 'in-review', 'done'].includes(st);
   if (fm.frozen_sha256) {
     if (block == null) add('error', 'story/frozen-changed', where, 'frozen_sha256 is set but the <frozen-after-approval> block is gone');
     else if (sha256(block) !== fm.frozen_sha256) add('error', 'story/frozen-changed', where, 'frozen intent changed since it was frozen — only the human renegotiates it (then re-run freeze)');
-  } else if (block != null && ['ready', 'in-progress', 'in-review', 'done'].includes(st)) {
+  } else if (block != null && hashed) {
     add('warn', 'story/frozen-unhashed', where, `status ${st} but the frozen block was never hashed — run: lean-method freeze --story ${s.id}`);
   }
+  // contract fields, frozen together with the block
+  if (fm.contract_sha256) {
+    if (contractHash(s.text) !== fm.contract_sha256) add('error', 'story/contract-changed', where, `a contract field (${CONTRACT_KEYS.join(', ')}) changed since freeze — set it back; re-freeze only once the change is agreed`);
+  } else if (fm.frozen_sha256 && hashed) {
+    add('warn', 'story/contract-unhashed', where, `frozen intent but no contract_sha256 (stories frozen by an older LEAN lack it) — run: lean-method freeze --story ${s.id}`);
+  }
+  if (fm.approved_via && !APPROVED_VIA.includes(fm.approved_via)) add('error', 'story/approved-via', where, `approved_via "${fm.approved_via}" is not one of ${APPROVED_VIA.join(' | ')}`);
+  if (fm.security === true && (fm.route === 'full' || fm.route === 'small') && ['in-progress', 'in-review', 'done'].includes(st) && !asList(fm.frozen_tests).length)
+    add('warn', 'story/security-untested', where, 'security: true but no frozen acceptance tests — lean-build writes them first, or records in Implementation Notes why the behavior cannot be tested deterministically');
   // frozen acceptance tests: locked while the story is being built
   if (!['done', 'retired'].includes(st))
     for (const entry of asList(fm.frozen_tests)) {
@@ -359,6 +372,15 @@ function checkStory(plan, id) {
     const dep = plan.stories.get(d);
     if (!dep) add('error', 'stories/dep-unknown', id, `depends on unknown story ${d}`);
     else if (!['done', 'retired'].includes(statusOf(dep))) add('warn', 'story/dep-open', id, `depends on ${d}, which is ${statusOf(dep)}`);
+  }
+  // baseline_commit is written once, before the first change: it must be a commit on this branch
+  const base = s.exists && s.fm.baseline_commit ? String(s.fm.baseline_commit) : '';
+  if (base && base !== 'NO_VCS' && ['in-progress', 'in-review', 'done'].includes(statusOf(s)) && hasGit(plan.root)) {
+    try {
+      execFileSync('git', ['-C', plan.root, 'merge-base', '--is-ancestor', base, 'HEAD'], { stdio: 'ignore' });
+    } catch {
+      add('warn', 'story/baseline-unknown', id, `baseline_commit ${base} is not a commit behind HEAD — the review and trespass diffs would be wrong`);
+    }
   }
   return findings.concat(s.exists ? checkTrespass(plan, s) : []);
 }
