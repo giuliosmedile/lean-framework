@@ -58,7 +58,7 @@ _lean/
   hooks/                 frozen-guard.js (PreToolUse hook for Claude Code and Codex)
 ```
 
-Not on the npm registry yet. From a local checkout: `npm pack` in `lean/`, then `npx --package=./lean-method-0.10.0.tgz lean-method install`.
+Not on the npm registry yet. From a local checkout: `npm pack` in `lean/`, then `npx --package=./lean-method-0.10.1.tgz lean-method install`.
 
 ## The flow
 
