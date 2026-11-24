@@ -23,7 +23,10 @@ Reviewers treat violations of rules 1–5 as findings (`over-engineering`). Tria
 | UX.md | 2 pages | as needed |
 | ARCHITECTURE.md | ≤ 7 ADs, 2 pages | as needed |
 | Build spec | ≤ 1,000 tokens | ≤ 1,600 tokens |
+| Build spec, feature story (the only story of its epic) | ≤ 2,000 tokens | ≤ 3,200 tokens |
 | Story description | 1 sentence | 2 sentences |
+
+`lean-method check` knows the plain cap only: for a feature story, its `story/size` warning up to the doubled cap is accepted. Past it, split along a real seam or trim.
 
 Write bullets and tables. No paragraph longer than 3 sentences. Drop any section that's empty.
 

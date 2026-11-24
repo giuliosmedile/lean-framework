@@ -86,6 +86,19 @@ Anything a script can decide, the script decides. Skills run these instead of wo
 
 **Reading the result:** `✖` errors must be fixed (or put to the user) before the step that needed the check; `▲` warnings are reported, not blocking. Never edit a file just to silence a finding you haven't understood. Use `--json` when you need to act on the findings one by one.
 
+## Cheap profile: feature-sized work
+
+A spec with at most three capabilities and no irreversible step is built the cheap way. Same checks, fewer sessions and fewer workers:
+
+| Step | What | Session model |
+|---|---|---|
+| `lean-intent` | the spec and its decisions | top |
+| `lean-plan` | one epic, one *feature story*, no questions | top |
+| `lean-build: next story` | small route, tests written with the code, one review of the feature (adversarial + verification-gap, + security at a trust boundary) | **mid** |
+| `lean-change retro` | short retro (one table) | **mid** |
+
+Frozen acceptance tests and a separate `test` worker stay for `security: true` and irreversible steps. A `bad_spec` or `intent_gap` loopback, or a failed implementer, moves the build to the top tier (`orchestration.md` §4). Epics with several stories keep one review at the end of the last story and a security pass on earlier stories that cross a trust boundary (`lean-build` step 4).
+
 ## Every lean skill, on start
 
 1. Read `{skill-root}/../lean-kit/kiss.md` and `{skill-root}/../lean-kit/orchestration.md`.

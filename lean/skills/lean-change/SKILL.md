@@ -31,6 +31,8 @@ Use when a build hit a wall the plan didn't foresee, a requirement changed, or b
 
 Judge the finished work against the evidence it left, not memory. **Every finding cites a source** (file, line, commit, triage-log row, deferred entry). A claim you can't point at is not a finding — drop it.
 
+**Short retro — an epic of one story (a feature story).** Read it directly: no `scout` workers, no analysis round. Read the story's Review Triage Log, Spec Change Log, Implementation Notes, the epic's `deferred.md`, and `lean-method metrics --epic <E> --json`. Write `retro.md` as: a one-line verdict (steps 4 and 6 below still apply, including the exit evidence), one table of findings with sources (≤ 8 rows), and the actions (≤ 5); pitfalls (step 5) at most 3, as below. Run it in a mid-tier session. A full retro on a one-story epic only when the user asks.
+
 1. **Scope.** Which epic (default: the most recent `done` epic in `epics.yaml`, or the active one whose story files are all `done`). If stories are still unfinished, say so and ask whether to proceed. Read only that epic's folder plus the SPEC/AD ids it cites.
 2. **Gather evidence** with `scout` workers in parallel (e.g. one over build specs + triage logs, one over git history + deferred.md), each returning a digest with a source reference on every line. Re-open the source of any line you turn into a finding: the stories and their build specs — especially Review Triage Logs, Spec Change Logs, `review_loops` counts, and Implementation Notes; the epic's `deferred.md`; `git log` / diff stats for the epic's commits; the SPEC capabilities and ADs the epic covered.
 3. **Analyze** for patterns no single story shows:

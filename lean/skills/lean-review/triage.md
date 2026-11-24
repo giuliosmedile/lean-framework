@@ -4,6 +4,8 @@ Shared by `lean-review` (code) and `lean-build`. Runs only after **every** revie
 
 ## 1. Verify and grade each finding
 
+**Settled decisions first.** A finding that only re-argues a decision recorded in the SPEC's Assumptions or Decision Log, or in the epic's or the story's decisions, takes verdict `false`, route `reject`, evidence `decided: {where it is recorded}`: one line, no code reading. If the finding names a concrete bad outcome that the record doesn't mention (not a preference, not "should be stricter"), verify it like any other and, if it's real, route it `intent_gap`: the decision may be the thing that's wrong.
+
 If the triage log already has rows (a loopback or resumed review), first match each finding against them: same location, same claim, and the code still reads as the row says → keep the row's verdict and route, mark it `carried`, don't re-verify or re-patch it.
 
 Findings from the verification-gap lens count as pre-verified **only if that reviewer ran at the `top` tier** (its evidence rules make it read the tests and run the searches it cites). Then take the gap as filed and weigh its filed disposition when routing. At any lower tier, verify its gaps like every other finding: re-open the cited test and re-run the cited search. Its `Other findings` are always verified.
