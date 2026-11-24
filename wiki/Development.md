@@ -49,7 +49,7 @@ npm test                                      # node --test test/*.test.js
 node --test --test-name-pattern=claims test/plan.test.js   # one test
 ```
 
-Result on Node 22 at 0.10.1: 39 tests, 39 pass, 0 fail, about 6 s. The tests use the built-in `node:test` runner and drive the real CLI against temp directories.
+Result on Node 22 at 0.10.2: 39 tests, 39 pass, 0 fail, about 6 s. The tests use the built-in `node:test` runner and drive the real CLI against temp directories.
 
 - `installer.test.js` (16): scout and tier suggestions, role agents for each tool, install, update, quick-update, uninstall, hooks, and a check that every `` `assets/<file>` `` a skill mentions exists.
 - `plan.test.js` (13): builds a small plan tree, then covers `check`, `next`, `freeze`, `metrics`, `claim`, lane trespass and the guard hook. Needs `git` on the path.
@@ -113,8 +113,8 @@ module.exports = {
 ## Versions and releases
 
 - **One source:** `version` in `lean/package.json`. The installer reads it for `--version`, the install banner and the manifest (`_lean/_config/manifest.yaml`, `installation.version`), which `status` and updates read back.
-- **Not published:** no git tags, no changelog, not on the npm registry. `npm pack --dry-run` shows `lean-method-0.10.1.tgz` (54 files, about 116 kB); the `files` field in `package.json` decides what ships.
-- **Local use:** `npm pack` in `lean/`, then `npx --package=./lean-method-0.10.1.tgz lean-method install`.
+- **Not published:** no git tags, no changelog, not on the npm registry. `npm pack --dry-run` shows `lean-method-0.10.2.tgz` (54 files, about 117 kB); the `files` field in `package.json` decides what ships.
+- **Local use:** `npm pack` in `lean/`, then `npx --package=./lean-method-0.10.2.tgz lean-method install`.
 - **Convention in the history:** a release is one commit titled `LEAN x.y.z: <summary>` that bumps `package.json`, updates README and `guide.md`, and adds tests. The body lists the changes and the test count.
 
 | Version | Commit | Date | Change |
@@ -128,6 +128,7 @@ module.exports = {
 | 0.9.0 | `09955da` | 2026-11-24 | Cheap profile for feature-sized work (at most three CAPs, nothing irreversible): one epic and one feature story with no team question, small route on a mid-tier session, tests written with the code (frozen tests only for `security: true` or an irreversible step), one review of the whole feature (earlier stories of a multi-story epic get a security pass only), reviewers told which decisions are settled, short retro for a one-story epic. Skills and docs only: no CLI change. Experimental: run once, for cost and time only ([Experiment Results](Experiment-Results.md)). 31 tests |
 | 0.10.0 | `ab03f60` | 2026-11-24 | Frozen contract fields and approval provenance, after an external review and the B run of the experiment. `freeze --via checkpoint\|plan` writes `approved_via` and `contract_sha256` (`caps`, `rules`, `seams`, `checkpoint`, `security`, `frozen_tests`, `approved_via`); `check` adds `story/contract-changed`, `story/contract-unhashed`, `story/approved-via`, `story/baseline-unknown`, `story/security-untested`, and the doubled cap for a feature story; the guard also blocks contract-field edits and a `baseline_commit` rewrite. Frozen lines the orchestrator wrote without a checkpoint carry `[ASSUMPTION]` and are open to review (`decision-conflict:`); triage judges them on the merits. `lean-loop` requires `loop.verify` unless `--allow-no-verify`. Not yet measured in a run. 37 tests |
 | 0.10.1 | `5fcbcf0` | 2026-11-24 | Review window and acceptance traceability. `check --story` prints the diff since the last feature review and whether a review is due: at the final story, or earlier once it passes `review.max_diff_lines` (default 1,500 changed lines; `0` reviews every story); stories record `review: feature \| security \| deferred`; `story/review-due` (parked by `lean-loop`), `story/review-vocab`. Acceptance criteria are numbered `AC-n` in the frozen block, tests name them as `<story id> AC-n`, and `story/ac-untested` lists the ones no changed test names (reported only). Not yet measured in a run. 39 tests |
+| 0.10.2 | `7454c84` | 2026-11-24 | One definition of an irreversible step, in `lean-kit`: a step a revert of the code would not undo (destructive or data-rewriting migration, data deletion, external side effect, deploy trigger). An additive migration with a working downgrade no longer counts, so a feature that only adds a table can take the cheap profile. Skills and docs only. 39 tests |
 
 ## Maintain this wiki
 
