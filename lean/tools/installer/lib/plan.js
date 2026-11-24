@@ -11,6 +11,8 @@ const { readMerged } = require('./config');
 const STORY_STATUS = ['todo', 'draft', 'ready', 'in-progress', 'in-review', 'done', 'blocked', 'retired'];
 const EPIC_STATUS = ['planned', 'active', 'done'];
 const IN_FLIGHT = ['draft', 'ready', 'in-progress', 'in-review'];
+const REVIEW_MAX_LINES = 1500; // default review.max_diff_lines
+const REVIEW_KINDS = ['feature', 'security', 'deferred']; // story frontmatter `review:`, written by lean-build step 4
 
 const read = (f) => (fs.existsSync(f) ? fs.readFileSync(f, 'utf8').replace(/\r\n/g, '\n') : null);
 
@@ -18,10 +20,13 @@ const read = (f) => (fs.existsSync(f) ? fs.readFileSync(f, 'utf8').replace(/\r\n
 function resolveProject(root, planOverride) {
   const cfg = readMerged(root);
   const sub = (v, d) => path.resolve(root, String(v || d).replace('{project-root}', root));
+  const maxLines = Number(cfg.review?.max_diff_lines);
   return {
     root,
     planDir: planOverride ? path.resolve(root, planOverride) : sub(cfg.core?.output_folder, 'plan'),
     style: cfg.lean?.style || 'kiss',
+    // lean-build reviews an earlier story of an epic once the unreviewed diff passes this many changed lines
+    reviewMaxLines: Number.isInteger(maxLines) && maxLines >= 0 ? maxLines : REVIEW_MAX_LINES,
   };
 }
 
@@ -187,6 +192,8 @@ module.exports = {
   STORY_STATUS,
   EPIC_STATUS,
   IN_FLIGHT,
+  REVIEW_MAX_LINES,
+  REVIEW_KINDS,
   resolveProject,
   loadPlan,
   frontmatter,

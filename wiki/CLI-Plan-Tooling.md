@@ -24,9 +24,9 @@ node _lean/bin/lean.js check [--epic E2 | --story E2-3] [--strict] [--json]
 | Flag | Effect |
 |---|---|
 | `--epic <id>` | One epic only. Skips document size and capability coverage. |
-| `--story <id>` | One story, for `lean-build`: its file, frozen intent and tests, size, open dependencies, lane trespass. |
+| `--story <id>` | One story, for `lean-build`: its file, frozen intent and tests, size, open dependencies, lane trespass, the review window, and a test for each numbered acceptance criterion. |
 | `--strict` | Warnings also exit 1. |
-| `--json` | `{ errors, warnings, findings: [{ level, code, where, msg }] }`. |
+| `--json` | `{ errors, warnings, findings: [{ level, code, where, msg }] }`; with `--story`, also `review: { story, final, from, base, lines, cap, due }` (`null` without git or a baseline). |
 
 Exit 1 on any error, or on any warning with `--strict`; otherwise 0. No plan folder gives one warning (`plan/missing`).
 
@@ -43,6 +43,16 @@ What it checks (✖ error, ▲ warning):
 | Document size | `spec/size`, `doc/log-size` | ▲ SPEC.md over its page cap, Decision Log over 40 entries. |
 | Claims | `claims/*` | ▲ claim on a `done` or unknown story. |
 | Trespass (`--story`) | `diff/*`, `story/baseline-unknown` | ✖ `diff/trespass`. ▲ `diff/no-git`; `baseline_commit` that is not a commit behind HEAD. |
+| Review (`--story`) | `story/review-due`, `story/review-vocab` | ▲ a feature review is due (final story, or the window over `review.max_diff_lines`) and the story's `review:` is not `feature`; `review:` outside `feature \| security \| deferred`. |
+| Acceptance (`--story`) | `story/ac-untested` | ▲ a numbered criterion (`- AC-n:` in the frozen block) that no test file changed since `baseline_commit` (or frozen for the story) names as `<story id> AC-n`. Test files: under `test/`, `tests/`, `__tests__/`, `spec/`, or named `test_*`, `*_test.*`, `*.test.*`, `*.spec.*`, `*Test(s).*`. Identifier forms count too (`test_e1_2_ac3`). |
+
+**Review window** (`--story`): the diff since the `baseline_commit` of the first story built after the last story with `review: feature` and status `done` (the epic's first built story when there is none), counted as changed lines in tracked files plus untracked files, outside the plan folder and `_lean/`. The text output prints it before the findings:
+
+```
+review window since 3f2a91c (E2-2): 1734 changed lines, cap 1500 → feature review due
+```
+
+In an epic with lanes the window can include other lanes' merged work.
 
 `story/size` estimates tokens as words × 4/3 over the spec body (no frontmatter, comments or append-only logs). Cap: 1000 for style `kiss`, 1600 for `standard`, doubled for a feature story (the only story of its epic, covering all the epic's capabilities).
 

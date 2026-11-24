@@ -2,7 +2,7 @@
 const path = require('node:path');
 const pc = require('picocolors');
 const { resolveProject, loadPlan } = require('../lib/plan');
-const { checkPlan, checkStory } = require('../lib/plan-check');
+const { checkPlan, checkStory, reviewWindow } = require('../lib/plan-check');
 
 module.exports = {
   command: 'check',
@@ -11,7 +11,7 @@ module.exports = {
     ['--directory <path>', 'Project directory (default: current directory)'],
     ['--plan <path>', 'Plan folder (default: core.output_folder from _lean/ config, else plan/)'],
     ['--epic <id>', 'Check one epic only (e.g. E2)'],
-    ['--story <id>', 'Check one story for lean-build: its file, frozen block, size, open dependencies, lane trespass since baseline_commit'],
+    ['--story <id>', 'Check one story for lean-build: its file, frozen block, size, open dependencies, lane trespass since baseline_commit, the review window, and tests for its numbered acceptance criteria'],
     ['--strict', 'Exit 1 on warnings too'],
     ['--json', 'Print findings as JSON'],
   ],
@@ -21,8 +21,11 @@ module.exports = {
     const findings = opts.story ? checkStory(plan, opts.story) : checkPlan(plan, { epic: opts.epic });
     const errors = findings.filter((f) => f.level === 'error').length;
     const warns = findings.length - errors;
-    if (opts.json) process.stdout.write(JSON.stringify({ errors, warnings: warns, findings }, null, 2) + '\n');
+    const review = opts.story ? reviewWindow(plan, opts.story) : null;
+    if (opts.json) process.stdout.write(JSON.stringify({ errors, warnings: warns, findings, ...(opts.story ? { review } : {}) }, null, 2) + '\n');
     else {
+      if (review)
+        process.stdout.write(`${pc.dim('review window')} since ${review.base} (${review.from}): ${review.lines} changed lines, cap ${review.cap}${review.final ? ' · final story' : ''} → ${review.due ? 'feature review due' : 'feature review not due'}\n`);
       for (const f of findings.sort((a, b) => (a.level === b.level ? 0 : a.level === 'error' ? -1 : 1)))
         process.stdout.write(`${f.level === 'error' ? pc.red('✖') : pc.yellow('▲')} ${pc.dim(f.code.padEnd(24))} ${f.where} — ${f.msg}\n`);
       const scope = opts.story || opts.epic || path.relative(root, plan.planDir) || '.';

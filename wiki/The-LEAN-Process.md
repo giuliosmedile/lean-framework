@@ -57,7 +57,7 @@ Separate **what** (the spec), **how** (the architecture) and **doing** (the buil
 4. **Tests first** (only when the story is `security: true` or a step is irreversible): a separate `test` worker writes failing acceptance tests; the orchestrator judges them and freezes them too. Otherwise the implementer writes the tests with the code.
 5. **Implement**: a fresh-context `implement` worker, with the spec as its only brief.
 6. **Check the diff**, not the worker's report, then run `lean-method check --story <id>` (planned stories only: ad-hoc specs are not in a `stories.yaml`, so only `freeze --file` and the guard hook cover them).
-7. **Review**, once per feature, at the final story of the epic: blind reviewers in parallel (adversarial and verification-gap; edge-case when some story ran the full route; the security lens at trust boundaries). The orchestrator verifies each finding and routes it: `intent_gap`, `bad_spec`, `amend`, `patch` or `defer`. See [Review and Triage](Review-and-Triage.md).
+7. **Review**, once per feature, at the final story of the epic (earlier if the unreviewed diff passes `review.max_diff_lines`): blind reviewers in parallel (adversarial and verification-gap; edge-case when some story ran the full route; the security lens at trust boundaries). The orchestrator verifies each finding and routes it: `intent_gap`, `bad_spec`, `amend`, `patch` or `defer`. See [Review and Triage](Review-and-Triage.md).
 8. **Finish**: a `## How to review` note, the `metrics:` block, `status: done`, a local commit.
 
 Details, flags and the `--auto` unattended mode: [lean-build](lean-build.md).
