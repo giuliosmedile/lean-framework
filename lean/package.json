@@ -4,6 +4,14 @@
   "description": "LEAN — a streamlined, orchestrator-first take on the BMAD method for AI-driven development",
   "keywords": ["ai", "agents", "skills", "orchestrator", "claude-code", "opencode", "bmad"],
   "license": "MIT",
+  "author": "Giulio Smedile",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/giuliosmedile/lean-framework.git",
+    "directory": "lean"
+  },
+  "homepage": "https://github.com/giuliosmedile/lean-framework#readme",
+  "bugs": { "url": "https://github.com/giuliosmedile/lean-framework/issues" },
   "type": "commonjs",
   "main": "tools/installer/lean-cli.js",
   "bin": {
@@ -15,7 +23,8 @@
   "scripts": {
     "lean:install": "node tools/installer/lean-cli.js install",
     "lean:scout": "node tools/installer/lean-cli.js scout",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "prepublishOnly": "npm test"
   },
   "dependencies": {
     "@clack/prompts": "^1.4.0",

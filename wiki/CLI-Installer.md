@@ -1,6 +1,6 @@
 **`npx lean-method` installs LEAN into a project, scouts your coding agents, and keeps the install in sync.**
 
-Package `lean-method` 0.10.2 (binaries `lean-method` and `lean`, Node >= 20.19). It is not on the npm registry yet: run `npm pack` in `lean/`, then `npx --package=./lean-method-0.10.2.tgz lean-method install`. First run: [Getting Started](Getting-Started.md). The same binary also has the plan commands (`check`, `next`, `freeze`, `claim`, `metrics`): see [CLI Plan Tooling](CLI-Plan-Tooling.md).
+Package `lean-method` 0.10.2 (binaries `lean-method` and `lean`, Node >= 20.19). Install with `npx lean-method install`. From a clone, run `npm pack` in `lean/`, then `npx --package=./lean-method-0.10.2.tgz lean-method install`. First run: [Getting Started](Getting-Started.md). The same binary also has the plan commands (`check`, `next`, `freeze`, `claim`, `metrics`): see [CLI Plan Tooling](CLI-Plan-Tooling.md).
 
 | Command | Does | Writes files? |
 |---|---|---|

@@ -113,7 +113,7 @@ module.exports = {
 ## Versions and releases
 
 - **One source:** `version` in `lean/package.json`. The installer reads it for `--version`, the install banner and the manifest (`_lean/_config/manifest.yaml`, `installation.version`), which `status` and updates read back.
-- **Not published:** no git tags, no changelog, not on the npm registry. `npm pack --dry-run` shows `lean-method-0.10.2.tgz` (54 files, about 117 kB); the `files` field in `package.json` decides what ships.
+- **Published:** on the npm registry as `lean-method`. Publish from `main` with `npm publish` in `lean/`; `prepublishOnly` runs the tests first. A published version cannot be changed, so every publish needs a new `version`. No changelog. `npm pack --dry-run` shows `lean-method-0.10.2.tgz` (55 files, about 117 kB); the `files` field in `package.json` decides what ships (`LICENSE` and `README.md` always go).
 - **Local use:** `npm pack` in `lean/`, then `npx --package=./lean-method-0.10.2.tgz lean-method install`.
 - **Convention in the history:** a release is one commit titled `LEAN x.y.z: <summary>` that bumps `package.json`, updates README and `guide.md`, and adds tests. The body lists the changes and the test count.
 

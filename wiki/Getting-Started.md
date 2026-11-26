@@ -7,9 +7,14 @@
 - **git** (recommended). Claims, the lane-trespass check, local commits and the pre-commit hook need it.
 - **Network** on the first run: `npx` fetches the installer's five dependencies from the npm registry.
 
-## Install today
+## Install
 
-LEAN is not on the npm registry yet. Pack it from a clone and run the installer from the tarball:
+```bash
+cd /path/to/your-project
+npx lean-method install
+```
+
+To try an unreleased change from a clone instead, pack it and run the installer from the tarball:
 
 ```bash
 git clone https://github.com/giuliosmedile/lean-framework.git
@@ -19,11 +24,11 @@ cd /path/to/your-project
 npx --package="$LEAN_PKG" lean-method install
 ```
 
-Once published, `npx lean-method install` is enough. Every other command below stays the same.
+The commands below use `npx lean-method …`. With a tarball, write `npx --package="$LEAN_PKG" lean-method …` instead.
 
 **Which directory does it install into?** The folder you run it from (`--directory <path>` overrides). Not the clone, not the git root. Run it in the project root you want. Running the checkout's `node tools/installer/lean-cli.js install` from inside `lean/` would install into `lean/`, so pass `--directory` there.
 
-Preview first, if you like: `npx --package="$LEAN_PKG" lean-method scout` is read-only. It lists the agents and models found on this machine and suggests worker tiers.
+Preview first, if you like: `npx lean-method scout` is read-only. It lists the agents and models found on this machine and suggests worker tiers.
 
 ## What the interactive install asks
 
@@ -75,7 +80,7 @@ Commit it all except what `_lean/.gitignore` excludes. Codex, OpenCode and AGY s
 
 ```bash
 cd /path/to/your-project
-npx --package="$LEAN_PKG" lean-method install --yes \
+npx lean-method install --yes \
   --tools claude-code \
   --user-name ada --style kiss \
   --set core.project_name=notes-app \
@@ -92,7 +97,7 @@ npx --package="$LEAN_PKG" lean-method install --yes \
 ## Verify
 
 ```bash
-npx --package="$LEAN_PKG" lean-method status
+npx lean-method status
 node _lean/bin/lean.js check               # PASS — plan: 0 error(s), 0 warning(s)
 node _lean/bin/lean.js next                # nothing ready — plan the next epic (lean-plan) or unblock a story
 ```

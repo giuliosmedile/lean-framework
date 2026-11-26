@@ -11,7 +11,7 @@ npx lean-method <command> [options]            # the same commands, from the pac
 
 - The installer copies the CLI and its three runtime dependencies into `_lean/bin/`. Node 20.19 or newer is all it needs.
 - Skills write `lean-method <cmd>` and mean `node {project-root}/_lean/bin/lean.js <cmd>`.
-- The package is not on the npm registry yet. From a clone: `node lean/tools/installer/lean-cli.js <cmd>`.
+- The package is on the npm registry: `npx lean-method <cmd>`. From a clone: `node lean/tools/installer/lean-cli.js <cmd>`.
 - Every command takes `--directory <path>` (project root, default: current directory) and `--plan <path>` (plan folder, default: `core.output_folder` from the [`_lean/` config](Configuration.md), else `plan/`).
 - Exit 0 is success. Exit 1 is a failed check or a thrown error (for example `give --story <id> or --file <path>`). `_lean/bin/lean.js` exits 2 for an unknown command or flag.
 
