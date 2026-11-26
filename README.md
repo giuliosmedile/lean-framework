@@ -1,6 +1,7 @@
 <h1 align="center">LEAN - LEAN Eliminates Agent Noise</h1>
 
 <p align="center">
+  <a href="https://www.npmjs.com/package/lean-method">npm</a> ·
   <a href="https://github.com/giuliosmedile/lean-framework/wiki">Wiki</a> ·
   <a href="https://github.com/giuliosmedile/lean-framework/wiki/Getting-Started">Getting started</a> ·
   <a href="https://github.com/giuliosmedile/lean-framework/wiki/The-LEAN-Process">The process</a> ·
@@ -11,7 +12,7 @@ LEAN is a streamlined, orchestrator-first method for building software with AI c
 
 It keeps the backbone of the [BMAD method](https://github.com/bmad-code-org/BMAD-METHOD) (it is derived from v6.12.4): separate **what** from **how** from **doing**, hand off through files, review adversarially. It drops the ceremony around that backbone, which is the "agent noise" of the name: activation boilerplate repeated in every skill, requirements re-copied five times, finalize rituals, step menus, per-story approvals. Measured at 0.7.0, LEAN's skills hold 22.7k words against 197.7k for BMAD's 29 ([how it was counted](https://github.com/giuliosmedile/lean-framework/wiki/LEAN-vs-BMAD#measured-size)).
 
-> **Status: an experiment.** Version 0.10.2, on npm as `lean-method`. Whether LEAN matches BMAD's quality for less cost and less of your time is still open. A first experiment (three features, one run per method) found the same quality at a higher cost for 0.8.0 and ended inconclusive under its pre-set rule; the cheap profile (`lean-lite`) in 0.9.0 came out of that result, was run once for cost only, and is **experimental**: see [Experiment Results](https://github.com/giuliosmedile/lean-framework/wiki/Experiment-Results). The repo also ships the [comparison protocol](https://github.com/giuliosmedile/lean-framework/wiki/LEAN-vs-BMAD) and the metrics.
+> **Status: an experiment.** Version 0.10.2, [on npm](https://www.npmjs.com/package/lean-method) as `lean-method`. Whether LEAN matches BMAD's quality for less cost and less of your time is still open. A first experiment (three features, one run per method) found the same quality at a higher cost for 0.8.0 and ended inconclusive under its pre-set rule; the cheap profile (`lean-lite`) in 0.9.0 came out of that result, was run once for cost only, and is **experimental**: see [Experiment Results](https://github.com/giuliosmedile/lean-framework/wiki/Experiment-Results). The repo also ships the [comparison protocol](https://github.com/giuliosmedile/lean-framework/wiki/LEAN-vs-BMAD) and the metrics.
 
 ## The flow
 
@@ -51,13 +52,14 @@ Small change? `lean-build` alone. A feature? `lean-intent` → `lean-plan` → `
 
 ## Quick start
 
-Requires Node 20.19 or newer and a supported agent. Until the package is published, install from a checkout:
+Requires Node 20.19 or newer and a supported agent. LEAN is on npm: run one command in the project you want it in.
 
 ```bash
-git clone https://github.com/giuliosmedile/lean-framework.git
-cd lean-framework/lean && npm install
-node tools/installer/lean-cli.js install --directory /path/to/your/project
+cd /path/to/your/project
+npx lean-method install
 ```
+
+To try an unreleased change, install from a checkout instead: see [Development](https://github.com/giuliosmedile/lean-framework/wiki/Development).
 
 The installer scouts the coding agents and models on your machine, asks a few questions (project, languages, `docs/` and `plan/` folders, style, model tiers), and installs the skills, role agents, config in `_lean/` and the plan CLI. Then open your agent in the project (restart it if it was running) and name a skill in your message:
 
