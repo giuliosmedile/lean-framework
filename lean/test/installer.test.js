@@ -1,4 +1,8 @@
 'use strict';
+// The CLI colors its output when FORCE_COLOR is set, and npm sets it for scripts run from a terminal
+// (`npm publish` → prepublishOnly → `npm test`). The tests match plain text, so switch colors off for the children.
+delete process.env.FORCE_COLOR;
+process.env.NO_COLOR = '1';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
