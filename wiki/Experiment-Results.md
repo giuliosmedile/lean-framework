@@ -1,4 +1,4 @@
-**LEAN 0.8.0 was tested against BMAD 6.12.4 on three features of one real project: the quality was the same, LEAN cost 1.65 to 2.85 times as much, and the pre-set rule gave "inconclusive". `lean-lite` (the cheap profile in LEAN 0.9.0) came out of that result and has been run once, for cost and time only. It is experimental and not yet tested for quality.**
+**LEAN 0.8.0 was tested against BMAD 6.12.4 on three features of one real project: the quality was the same, LEAN cost 1.65 to 2.85 times as much, and the pre-set rule gave "inconclusive". LEAN 0.10.2, with the cheap profile, was then tested on a fourth feature (two runs per method, arm order alternated, new hidden tests): it cost 59% as much and took 64% of the time, the hidden tests could not tell the two apart again, and a blind judge preferred BMAD in all four readings. The rule again gave "inconclusive".**
 
 The question was the one in [LEAN vs BMAD](LEAN-vs-BMAD.md): does LEAN match BMAD's quality for less cost and less of your time? This page reports the answer so far, how far it can be trusted, and what is still unknown.
 
@@ -10,6 +10,8 @@ The question was the one in [LEAN vs BMAD](LEAN-vs-BMAD.md): does LEAN match BMA
 | Does LEAN 0.8.0 cost less? | No: 165%, 183% and 285% of BMAD's cost, and 125%, 133% and 273% of its time | Same limits |
 | Does `lean-lite` cost less? | On one feature, yes: 77% of BMAD's cost and 27% of LEAN 0.8.0's; time 105% of BMAD's | One run, after the method was tuned on that very feature |
 | Is `lean-lite`'s output as good? | **Not measured** | The hidden tests had been seen when `lean-lite` was written |
+| Does LEAN 0.10.2 (cheap profile) cost less, on a feature it was not tuned on? | Yes: 59% of BMAD's cost and 64% of its time, averaged over two runs each | Feature D, two runs per method, order alternated; the time gap is inside BMAD's own run-to-run noise |
+| Is its output as good? | **Not shown.** The hidden tests are at the ceiling (99 to 100 for every run), and a blind judge preferred BMAD in 4 readings out of 4 | Two runs per method; see [the feature D series](#the-feature-d-series-lean-0102) |
 
 ## What was compared
 
@@ -133,10 +135,37 @@ The B failure had a mechanical cause: `lean-build` treated everything in a story
 
 None of this has been measured yet. See [Frozen Intent and Guards](Frozen-Intent-and-Guards.md) and [Review and Triage](Review-and-Triage.md).
 
+## The feature D series (LEAN 0.10.2)
+
+After 0.9.0 and the changes in "After the experiment", LEAN 0.10.2 and BMAD 6.12.4 were compared on a fourth feature, **D, an audit log** (record six kinds of events in an append-only table; an administrator reads it over REST and MCP, with filters and paging). It was designed to fix what C could not show:
+
+- **New hidden tests**, written by a separate session that never saw either method's output, frozen before any run: 61 cases in three classes, 20 of them testing behaviour the brief only implies.
+- **Two runs per method, order alternated** (BMAD then LEAN, then LEAN then BMAD), so there is a noise band.
+- **LEAN's rules frozen at 0.10.2** for the series. The one change made for it: an additive migration with a working downgrade no longer counts as an irreversible step, so a feature like D can take the cheap profile.
+
+| | BMAD run 1 | LEAN run 1 | LEAN run 2 | BMAD run 2 |
+|---|---|---|---|---|
+| Hidden tests | 100.0 | 100.0 | 99.0 | 100.0 |
+| Existing tests, lint, types | green | green | green | green |
+| Cost | $7.92 | $4.42 | $4.86 | $7.83 |
+| Your time (min) | 62.1 | 32.8 | 32.8 | 40.8 |
+| Work units | 4 stories | 1 feature story | 1 feature story | 3 stories |
+| Planning documents (words) | 5,420 | 3,188 | 3,205 | 6,275 |
+
+- **Cost and time.** LEAN averaged $4.64 against BMAD's $7.88 (59%), and 32.8 minutes against 51.5 (64%). The cost gap is far outside the noise. The time gap is smaller than BMAD's own spread between its two runs (21 minutes), so it counts as a tie. LEAN chose the cheap profile in both runs.
+- **Hidden tests.** Every run scored 99 or 100, so the tests cannot separate the methods; by the rule written beforehand, quality is "not informative". The 99 is a flaw in the test, not in the code: it builds an identifier "that no event has" by adding one to an existing identifier, and LEAN's identifiers are consecutive.
+- **The blind judge preferred BMAD in all four readings** (two per pair, positions swapped, so it is not position bias), always with medium confidence. In A and C it had preferred LEAN.
+- **Defects checked in the code.** Every run has one: a message confirmed as seen after its thread was resolved still logs a "seen" event. LEAN's code also lost an `auth.failed` event when the audit lock was held for more than a second (both runs), rejected an empty filter value (run 1), answered 500 instead of 422 for a malformed `limit` such as `--1` (run 2), and used sequential identifiers instead of the UUIDv7 the architecture requires (run 2). BMAD's code waits for the lock without a limit, so a 401 can be delayed but no event is lost. LEAN had 2 more defects than BMAD in run 1 and 2 or 3 more in run 2 (the third is a convention violation rather than a wrong behaviour); the rule's trigger of 3 more is met only in the broader count, so the verdict carries this as a qualification.
+- **The rule's result: inconclusive.** Efficiency is met, quality cannot be called equal, and the judge and the defect count lean against LEAN.
+
+What this means: for a feature this size, the cheap profile saved about 40% of the cost and about a third of the time, but the hidden tests are too coarse to say it kept the quality, and two independent signals suggest it kept slightly less. Two runs per method cannot rule out that this is the agent's own variation. The full record is in the experiment's report for D.
+
+Limits specific to this series: the operator differed in run 2 (an agent answered LEAN's questions and a person answered BMAD's, so the time figures are not like for like); BMAD varied between its runs (4 stories, then 3; reviewers per story skipped in some); a first attempt at run 2 for BMAD, driven without a terminal, was discarded because BMAD's spec skill takes a different path with no terminal and never proposes stories.
+
 ## What would settle it
 
-1. A **new feature with a new hidden test set**, written and frozen before any run, built by BMAD and by LEAN 0.9.0.
-2. **Each arm run at least twice**, to get a noise band, with the **order alternated**.
+1. ~~A new feature with a new hidden test set~~ (done: feature D). A **second feature with a harder hidden test set**, one that is not at the ceiling and that probes input handling, concurrency and conventions, which are where the judge found the differences.
+2. ~~Each arm run at least twice, order alternated~~ (done for D). **Three or more runs per arm**, with the same operator answering both methods.
 3. A **modifiability test**: a small follow-up change made on each resulting codebase.
 4. **One lever at a time** (the mid-tier session, the single review, tests without a frozen worker), to see which one earns its saving.
 
