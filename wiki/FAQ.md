@@ -80,7 +80,7 @@ Claude Code, Codex, OpenCode and Antigravity CLI. The other 44 targets are `basi
 npx lean-method install --yes --tools claude-code,opencode --set style=standard
 ```
 
-`install --list-tools` and `install --list-options` print valid values. LEAN is not on npm yet; see [Getting Started](Getting-Started.md) and [CLI Installer](CLI-Installer.md).
+`install --list-tools` and `install --list-options` print valid values. See [Getting Started](Getting-Started.md) and [CLI Installer](CLI-Installer.md).
 
 **Update, quick-update, uninstall?**
 `--action update` re-asks with your answers as defaults; `quick-update` keeps them and refreshes files. `uninstall` keeps `_lean/custom/` (unless `--all`) and your plans.

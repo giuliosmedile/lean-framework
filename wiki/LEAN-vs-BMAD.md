@@ -1,4 +1,4 @@
-**LEAN is BMAD v6.12.4 with the overhead removed: same backbone, 9 skills instead of 29, 5x to 9x fewer instruction words depending on how you count.** This is the only page that assumes you know BMAD.
+**LEAN is BMAD v6.12.4 with the overhead removed: same backbone, 9 skills instead of 29, 4x to 7x fewer instruction words depending on how you count.** This is the only page that assumes you know BMAD.
 
 ## Why LEAN exists
 
@@ -48,20 +48,20 @@ LEAN removes noise: instruction text the agent reads on every run that does not 
 
 ## Measured size
 
-Words from `wc -w` over every file in the skill directories. LEAN is `lean/skills/`. BMAD is `.claude/skills/bmad-*` (identical to `.agents/skills`) from baseline commit `b6cf242` (read from git history; the working tree may not contain it).
+Words from `wc -w` over every file in the skill directories, measured at LEAN 0.10.2. LEAN is `lean/skills/`. BMAD is `.claude/skills/bmad-*` (identical to `.agents/skills`) from baseline commit `b6cf242` (read from git history; the working tree may not contain it).
 
 ```bash
-find lean/skills -type f | xargs cat | wc -w                                    # 22717
+find lean/skills -type f | xargs cat | wc -w                                    # 26712
 mkdir /tmp/bmad && git archive b6cf242 .claude/skills | tar -x -C /tmp/bmad
 find /tmp/bmad/.claude/skills -type f | xargs cat | wc -w                       # 197753
 ```
 
 | Measure | BMAD | LEAN | LEAN share |
 |---|---|---|---|
-| Skills / files | 29 / 214 | 8 / 26 | - |
-| Words, all files | 197,753 | 22,717 | 11.5% (8.7x smaller) |
-| Words, excluding `tests/` dirs | 180,834 | 22,717 | 12.6% (8.0x) |
-| Words, markdown only | 112,281 | 22,466 | 20.0% (5.0x) |
+| Skills / files | 29 / 214 | 9 / 28 | - |
+| Words, all files | 197,753 | 26,712 | 13.5% (7.4x smaller) |
+| Words, excluding `tests/` dirs | 180,834 | 26,712 | 14.8% (6.8x) |
+| Words, markdown only | 112,281 | 26,461 | 23.6% (4.2x) |
 
 Markdown only is the conservative figure: BMAD's Python, HTML and CSV inflate the others. Words are not tokens, and a run loads one skill plus the shared kit files, not everything installed.
 
@@ -69,18 +69,19 @@ Markdown only is the conservative figure: BMAD's Python, HTML and CSV inflate th
 |---|---|---|
 | `lean-intent` | 34,465 | 1,787 |
 | `lean-architecture` | 6,974 | 1,318 |
-| `lean-plan` | 13,181 | 3,073 |
-| `lean-build` | 22,940 | 3,669 |
-| `lean-review` | 14,947 | 5,546 |
-| `lean-change` | 24,230 | 1,353 |
-| `lean-help` | 726 | 3,132 |
-| `lean-kit` | 2,290 | 2,839 |
+| `lean-plan` | 13,181 | 3,234 |
+| `lean-build` | 22,940 | 4,791 |
+| `lean-review` | 14,947 | 5,780 |
+| `lean-change` | 24,230 | 1,450 |
+| `lean-help` | 726 | 3,354 |
+| `lean-kit` | 2,290 | 3,786 |
+| `lean-loop` | none in the baseline | 1,212 |
 | folded into build/change | 9,242 | included above |
 | dropped | 68,758 | 0 |
 
-`lean-help` and `lean-kit` grew: help bundles a 1,888-word guide, and kit holds the orchestration and KISS rules that replace per-skill boilerplate.
+`lean-help` and `lean-kit` grew: help bundles a 2,013-word guide, and kit holds the orchestration and KISS rules that replace per-skill boilerplate.
 
-The user guide's "19k words instead of 180k" was true at 0.4.0 (19,055 vs 180,834). LEAN grew about 19% by 0.7.0 as enforcement was added.
+The user guide's "19k words instead of 180k" was true at 0.4.0 (19,055 vs 180,834). LEAN grew about 19% by 0.7.0 and about 40% by 0.10.2 (26,712 words) as enforcement, the loop skill and the cheap profile were added.
 
 ## Risks being watched
 

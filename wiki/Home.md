@@ -60,4 +60,4 @@ LEAN is derived from the BMAD method, keeps its backbone (what / how / doing, fi
 
 ## Status
 
-LEAN is an experiment: can the BMAD method be streamlined without losing its core? It is on npm as `lean-method`. The [comparison protocol](LEAN-vs-BMAD.md#comparison-protocol) says how to measure it, and [Experiment Results](Experiment-Results.md) reports the first run: same quality as BMAD, higher cost for 0.8.0, inconclusive overall. The cheap profile (`lean-lite`, 0.9.0) came out of that result and is not yet fully tested.
+LEAN is an experiment: can the BMAD method be streamlined without losing its core? It is on npm as `lean-method`. The [comparison protocol](LEAN-vs-BMAD.md#comparison-protocol) says how to measure it, and [Experiment Results](Experiment-Results.md) reports the runs so far: 0.8.0 matched BMAD's quality at a higher cost; 0.10.2 with the cheap profile (`lean-lite`, from 0.9.0) cost 59% as much and took 64% of the time on a fourth feature, with quality not shown to match. Overall: inconclusive.
